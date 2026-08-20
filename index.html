@@ -319,9 +319,6 @@
   #loginBtn{width:100%;padding:11px 14px;background:var(--green);color:#fff;}
   #loginBtn:hover{background:var(--green-deep);}
   #loginMsg{min-height:20px;margin-top:10px;font-size:12.5px;color:var(--red);}
-  .pwd-wrap{position:relative;}
-  .pwd-wrap input{width:100%;padding-right:38px;}
-  .pwd-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;padding:4px;font-size:16px;cursor:pointer;color:var(--ink-soft);}
   .session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:140px;}
   .logout-btn{background:#fff;color:var(--ink);padding:6px 10px;font-size:11px;flex-shrink:0;}
   .auditor-type{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fdfdfb;min-height:37px;}
@@ -340,11 +337,7 @@
     <p>Sign in with your assigned auditor account. Internal auditors can access only their assigned site(s); external auditors can access all sites for the specified company.</p>
     <form id="loginForm">
       <div class="auth-field"><label for="loginUsername">Username</label><input id="loginUsername" autocomplete="username" required></div>
-      <!-- loginPassword and signupPassword, same pattern -->
-      <div class="pwd-wrap">
-        <input id="loginPassword" type="password" autocomplete="current-password" required>
-        <button type="button" class="pwd-toggle" data-target="loginPassword" aria-label="Show password">👁</button>
-      </div>
+      <div class="auth-field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
       <button id="loginBtn" type="submit">Sign in</button>
       <button id="signupBtn" type="button" class="btn-ghost" style="width:100%;margin-top:8px;">Create auditor account / Sign up</button>
       <div id="loginMsg"></div>
@@ -1335,15 +1328,6 @@
     <input id="signupNewSitesInput" placeholder="e.g. HQ, PLANT1, PLANT2 (comma separated)" autocomplete="off" />`;
   signupSitesField.parentNode.insertBefore(signupNewSitesField, signupSitesField.nextSibling);
   const signupNewSitesInput = signupNewSitesField.querySelector('#signupNewSitesInput');
-
-  document.querySelectorAll('.pwd-toggle').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const input = document.getElementById(btn.dataset.target);
-    const show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    btn.textContent = show ? '🙈' : '👁';
-  });
-});
 
   let signupOrgDirectory = [];
   async function loadSignupOrgs(){
