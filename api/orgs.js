@@ -15,7 +15,9 @@ export default async function handler(req, res) {
       }
       if (req.method === 'POST') {
         const user = await requireUser(req, res); if (!user) return;
-        if (!requireAdmin(user, res)) return;
+        if (!user || (user.role !== 'admin' && user.role !== 'external')) {
+          return json(res, 403, { error: 'External auditor or administrator access required.' });
+        }
         const b = await readBody(req);
         const name = String(b.name || '').trim();
         if (!name) return json(res, 400, { error: 'Organisation name is required.' });
