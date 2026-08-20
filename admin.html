@@ -6,6 +6,15 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}.wra
 .navbar a{color:#C8CDD6;text-decoration:none;font-size:13px;font-weight:600;padding:7px 14px;border-radius:6px}
 .navbar a.active{background:#2f7a52;color:#fff}
 .navbar a:hover:not(.active){background:#2a3442}
+.org{border-bottom:1px solid #eee;padding:12px 0}
+.org:last-child{border-bottom:0}
+.org-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.org-sites{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.org-site-chip{display:inline-flex;align-items:center;gap:6px;background:#e9f3ee;border-radius:12px;padding:4px 9px;font-size:12px}
+.org-site-chip button{border:0;background:none;color:#b5533c;cursor:pointer;font-weight:700;padding:0;font-size:13px;line-height:1}
+.inline-add{display:flex;gap:6px;margin-top:8px}
+.inline-add input{flex:1;padding:7px;border:1px solid #dde2d9;border-radius:6px;font-size:12px}
+.inline-add button{padding:7px 10px;font-size:12px}
 @media (max-width:600px){.navbar{flex-wrap:wrap}.navbar a{flex:1 1 auto;text-align:center}}
 @media (max-width:600px){
   .wrap{margin:14px auto;padding:0 12px}
@@ -19,15 +28,127 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}.wra
 <nav class="navbar"><a href="/">Audit</a><a href="/admin.html" class="active">Admin</a></nav>
 <div class="wrap">
 <div class="card"><div class="top"><div><div class="muted">JASTECA</div><h1 style="margin:4px 0">5S Auditor Accounts</h1><div class="muted">Create internal auditors with site restrictions and external auditors with access to all sites.</div></div></div><div id="who" class="muted" style="margin-top:10px"></div></div>
-<div class="card"><h2>Create user</h2><form id="form"><div class="grid"><div class="field"><label>Username</label><input id="username" required></div><div class="field"><label>Full name</label><input id="fullName" required></div><div class="field"><label>Temporary / initial password</label><input id="password" type="password" minlength="8" required></div><div class="field"><label>Role</label><select id="role"><option value="internal">Internal Auditor</option><option value="external">External Auditor</option><option value="admin">Administrator</option></select></div></div><div style="margin-top:14px"><div class="muted" style="margin-bottom:6px">Assign site(s) — required for Internal Auditor. External Auditors and Administrators can access all sites.</div><div class="sites" id="sites"></div></div><div style="margin-top:14px"><button class="btn primary">Create account</button></div><div class="msg" id="msg"></div></form></div>
+
+<div class="card"><h2>Organisations</h2><div class="muted" style="margin-bottom:10px">Each internal auditor belongs to one organisation. External auditors and admins work across all of them.</div>
+<div id="orgs">Loading…</div>
+<div class="inline-add" style="margin-top:14px"><input id="newOrgName" placeholder="New organisation name"><button class="btn primary" id="addOrgBtn" type="button">Add organisation</button></div>
+<div class="msg" id="orgMsg"></div>
+</div>
+
+<div class="card"><h2>Create user</h2><form id="form"><div class="grid"><div class="field"><label>Username</label><input id="username" required></div><div class="field"><label>Full name</label><input id="fullName" required></div><div class="field"><label>Temporary / initial password</label><input id="password" type="password" minlength="8" required></div><div class="field"><label>Role</label><select id="role"><option value="internal">Internal Auditor</option><option value="external">External Auditor</option><option value="admin">Administrator</option></select></div><div class="field" id="orgField"><label>Organisation</label><select id="organisation"></select></div></div><div style="margin-top:14px" id="sitesBlock"><div class="muted" style="margin-bottom:6px">Assign site(s) — required for Internal Auditor. External Auditors and Administrators can access all sites.</div><div class="sites" id="sites"></div></div><div style="margin-top:14px"><button class="btn primary">Create account</button></div><div class="msg" id="msg"></div></form></div>
+
 <div class="card"><h2>Existing users</h2><div id="users">Loading…</div></div>
 </div><script>
-const SITES=['BBO','BKN','BTO','EME','GNT','HRN','LKM','MGT','MVB','ORIC','RDP','UDW','VBL','WMB'];
-const $=id=>document.getElementById(id); const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-$('sites').innerHTML=SITES.map(s=>`<label><input type="checkbox" value="${s}"> ${s}</label>`).join('');
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path,opt={}){const r=await fetch(path,{credentials:'same-origin',...opt,headers:{'Content-Type':'application/json',...(opt.headers||{})}});let b={};try{b=await r.json()}catch{}if(!r.ok)throw Error(b.error||`HTTP ${r.status}`);return b}
-async function init(){try{const me=await api('/api/me');if(me.user.role!=='admin')throw Error('Administrator access required.');$('who').textContent=`Signed in as ${me.user.full_name}`;await refresh()}catch(e){$('users').innerHTML=`<div class="msg">${esc(e.message)}. <a href="/">Sign in</a></div>`;}}
-async function refresh(){const b=await api('/api/users');$('users').innerHTML=b.users.map(u=>`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(u.role)}</span><div class="muted">@${esc(u.username)} · Sites: ${u.sites?.length?esc(u.sites.join(', ')):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><button class="btn danger" onclick="disableUser(${u.id},${u.is_active})">${u.is_active?'Disable':'Enable'}</button></div>`).join('')||'<div class="muted">No users.</div>'}
+
+let orgs=[];              // [{id, name}]
+let orgSitesCache={};     // id -> [site,...]
+
+async function loadOrgs(){
+  const b=await api('/api/organisations');
+  orgs=b.organisations;
+  $('organisation').innerHTML=orgs.length
+    ? orgs.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')
+    : '<option value="">No organisations yet</option>';
+  await renderOrgsCard();
+  await onOrgFieldChange();
+}
+
+async function fetchOrgSites(id){
+  if(orgSitesCache[id]) return orgSitesCache[id];
+  const b=await api('/api/org-sites?organisation_id='+id);
+  orgSitesCache[id]=b.sites;
+  return b.sites;
+}
+
+async function renderOrgsCard(){
+  if(!orgs.length){$('orgs').innerHTML='<div class="muted">No organisations yet — add one below.</div>';return}
+  const parts=await Promise.all(orgs.map(async o=>{
+    const sites=await fetchOrgSites(o.id);
+    return `<div class="org" data-org="${o.id}">
+      <div class="org-head"><b>${esc(o.name)}</b><span class="muted">${sites.length} site${sites.length===1?'':'s'}</span></div>
+      <div class="org-sites">${sites.map(s=>`<span class="org-site-chip">${esc(s)}<button data-org="${o.id}" data-site="${esc(s)}" class="removeSiteBtn" type="button">&times;</button></span>`).join('')||'<span class="muted">No sites yet</span>'}</div>
+      <div class="inline-add"><input placeholder="Add site code" class="newSiteInput" data-org="${o.id}"><button class="btn primary addSiteBtn" data-org="${o.id}" type="button">Add</button></div>
+    </div>`;
+  }));
+  $('orgs').innerHTML=parts.join('');
+  document.querySelectorAll('.addSiteBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    const orgId=btn.dataset.org;
+    const input=document.querySelector(`.newSiteInput[data-org="${orgId}"]`);
+    const site=input.value.trim();
+    if(!site)return;
+    try{await api('/api/org-sites',{method:'POST',body:JSON.stringify({organisation_id:Number(orgId),site})});delete orgSitesCache[orgId];await renderOrgsCard();await onOrgFieldChange()}catch(e){alert(e.message)}
+  }));
+  document.querySelectorAll('.removeSiteBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    const orgId=btn.dataset.org, site=btn.dataset.site;
+    if(!confirm(`Remove site ${site}? Existing audits for this site keep their history, but auditors will no longer be able to select it.`))return;
+    try{await api('/api/org-sites?organisation_id='+orgId+'&site='+encodeURIComponent(site),{method:'DELETE'});delete orgSitesCache[orgId];await renderOrgsCard();await onOrgFieldChange()}catch(e){alert(e.message)}
+  }));
+}
+
+$('addOrgBtn').addEventListener('click',async()=>{
+  const name=$('newOrgName').value.trim();
+  if(!name){$('orgMsg').textContent='Enter an organisation name.';return}
+  $('orgMsg').textContent='Adding…';
+  try{await api('/api/organisations',{method:'POST',body:JSON.stringify({name})});$('newOrgName').value='';$('orgMsg').textContent='Organisation added.';await loadOrgs()}catch(e){$('orgMsg').textContent=e.message}
+});
+
+function updateRoleVisibility(){
+  const isInternal=$('role').value==='internal';
+  $('orgField').style.display=isInternal?'':'none';
+  $('sitesBlock').style.display=isInternal?'':'none';
+}
+
+async function onOrgFieldChange(){
+  if($('role').value!=='internal'){$('sites').innerHTML='';return}
+  const orgId=$('organisation').value;
+  if(!orgId){$('sites').innerHTML='<div class="muted">Add an organisation first.</div>';return}
+  const sites=await fetchOrgSites(orgId);
+  $('sites').innerHTML=sites.length
+    ? sites.map(s=>`<label><input type="checkbox" value="${esc(s)}"> ${esc(s)}</label>`).join('')
+    : '<div class="muted">This organisation has no sites yet — add one above.</div>';
+}
+
+$('role').addEventListener('change',()=>{updateRoleVisibility();onOrgFieldChange()});
+$('organisation').addEventListener('change',onOrgFieldChange);
+
+async function init(){
+  try{
+    const me=await api('/api/me');
+    if(me.user.role!=='admin')throw Error('Administrator access required.');
+    $('who').textContent=`Signed in as ${me.user.full_name}`;
+    updateRoleVisibility();
+    await loadOrgs();
+    await refresh();
+  }catch(e){$('users').innerHTML=`<div class="msg">${esc(e.message)}. <a href="/">Sign in</a></div>`;}
+}
+
+async function refresh(){
+  const b=await api('/api/users');
+  $('users').innerHTML=b.users.map(u=>`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · Sites: ${u.sites?.length?esc(u.sites.join(', ')):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><button class="btn danger" onclick="disableUser(${u.id},${u.is_active})">${u.is_active?'Disable':'Enable'}</button></div>`).join('')||'<div class="muted">No users.</div>';
+}
+
 window.disableUser=async(id,active)=>{try{await api('/api/user?id='+id,{method:'PATCH',body:JSON.stringify({is_active:!active})});await refresh()}catch(e){alert(e.message)}};
-$('form').addEventListener('submit',async e=>{e.preventDefault();$('msg').textContent='Creating…';const role=$('role').value;const sites=[...document.querySelectorAll('#sites input:checked')].map(x=>x.value);try{await api('/api/users',{method:'POST',body:JSON.stringify({username:$('username').value,full_name:$('fullName').value,password:$('password').value,role,sites})});$('form').reset();$('msg').textContent='Account created.';await refresh()}catch(e){$('msg').textContent=e.message}});$('role').addEventListener('change',()=>{});init();
+
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const role=$('role').value;
+  const sites=role==='internal'?[...document.querySelectorAll('#sites input:checked')].map(x=>x.value):[];
+  const organisation_id=role==='internal'?(Number($('organisation').value)||null):null;
+  if(role==='internal'&&!organisation_id){$('msg').textContent='Select an organisation.';return}
+  if(role==='internal'&&!sites.length){$('msg').textContent='Select at least one site.';return}
+  $('msg').textContent='Creating…';
+  try{
+    await api('/api/users',{method:'POST',body:JSON.stringify({username:$('username').value,full_name:$('fullName').value,password:$('password').value,role,organisation_id,sites})});
+    $('form').reset();
+    updateRoleVisibility();
+    await onOrgFieldChange();
+    $('msg').textContent='Account created.';
+    await refresh();
+  }catch(e){$('msg').textContent=e.message}
+});
+
+init();
 </script></body></html>
