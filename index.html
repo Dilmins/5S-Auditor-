@@ -61,8 +61,8 @@
   }
   .mast p.sub{margin:0; color:#C8CDD6; font-size:13.5px;}
 
-  /* mast-footer holds the brand chip + session bar. On desktop it stays
-     position:static so its absolutely-positioned children anchor to .mast
+  /* mast-footer holds the brand chip. On desktop it stays
+     position:static so its absolutely-positioned child anchors to .mast
      (which is position:relative) exactly like the original design. On
      mobile it switches to a static flex row instead. */
   .mast-footer{ position:static; }
@@ -106,6 +106,14 @@
   }
   .navbar a.active{ background:#2f7a52; color:#fff; }
   .navbar a:hover:not(.active){ background:#2a3442; }
+
+  /* Session chip + Sign out button, now living in the nav row itself,
+     inline with the hamburger toggle, instead of the masthead below it. */
+  .nav-session{
+    display:flex; align-items:center; gap:8px;
+    margin-left:auto; flex-shrink:0;
+  }
+
   @media (max-width:600px){
     .navbar{ padding:8px 14px; }
     .nav-toggle{ display:flex; }
@@ -117,6 +125,7 @@
     }
     .navbar.nav-open .nav-links{ display:flex; }
     .navbar a{ width:100%; text-align:left; padding:10px 12px; }
+    .nav-session .session-chip span.chip-label{ display:none; }
   }
 
   /* ---------- Meta bar ---------- */
@@ -275,11 +284,10 @@
   .mast{padding:16px 16px 18px;}
   .mast-footer{
     position:static;
-    display:flex; justify-content:space-between; align-items:center;
+    display:flex; justify-content:flex-end; align-items:center;
     flex-wrap:wrap; gap:10px; margin-top:14px;
   }
   .mast-brand{position:static; margin:0;}
-  .sessionbar{position:static; margin:0;}
   .metabar{padding:14px 16px; gap:12px;}
   .metabar .field{min-width:100%; flex:1 1 100%;}
   .metabar .btnrow{width:100%;}
@@ -297,6 +305,7 @@
   .pill{width:26px; height:26px; font-size:11px;}
   .pills{gap:4px;}
   .mast-brand span{display:none;}
+  .nav-session .logout-btn{padding:6px 8px;}
 }
 
   /* ---------- Authentication ---------- */
@@ -311,9 +320,8 @@
   #loginBtn{width:100%;padding:11px 14px;background:var(--green);color:#fff;}
   #loginBtn:hover{background:var(--green-deep);}
   #loginMsg{min-height:20px;margin-top:10px;font-size:12.5px;color:var(--red);}
-  .sessionbar{position:absolute;right:28px;top:18px;z-index:2;display:flex;align-items:center;gap:8px;}
-  .session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;}
-  .logout-btn{background:#fff;color:var(--ink);padding:6px 10px;font-size:11px;}
+  .session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;white-space:nowrap;}
+  .logout-btn{background:#fff;color:var(--ink);padding:6px 10px;font-size:11px;flex-shrink:0;}
   .auditor-type{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fdfdfb;min-height:37px;}
   .auditor-type label{font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px;}
   .auditor-type input{accent-color:var(--green);}
@@ -366,6 +374,10 @@
       <a href="/" class="active">Audit</a>
       <a href="/admin.html" id="navAdminLink" style="display:none;">Admin</a>
     </div>
+    <div class="nav-session" id="navSession">
+      <span class="session-chip" id="sessionUser"><span class="chip-label">Not signed in</span></span>
+      <button class="logout-btn" id="logoutBtn" type="button">Sign out</button>
+    </div>
   </nav>
   <div class="mast">
     <p class="mast-eyebrow">Vidullanka PLC · 5S Online Audit Form</p>
@@ -373,12 +385,8 @@
     <p class="sub">Service &amp; Manufacturing Sectors — 5S, KPIs, and Japanese Management Implementations</p>
     <div class="mast-footer">
       <div class="mast-brand">
-        <span class="brand-chip"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABgCAYAAACkLtSSAAAR2klEQVR4nOVdfXRV1ZX/7X3OfR/5DiEgiEgLIiCimFZtlT6rLr/F6hiQjqOttdhxdbWrtq4485mZmSlaKgUUq5UWNCoIISWQBHIhATTL0FEAAABJRU5ErkJggg==" alt="Bridgp Dynamics logo" /></span>
+        <span class="brand-chip"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABgCAYAAACkLtSSAAAR2klEQVR4nOVdfXRV1ZX/7X3OfR/5DiEgiEgLIiCimFZtlT6rLr/F6hiQjqOttdhxdbWrtq4685mZmSlaKgUUq5UWNCoIISWQBHIhATTL0FEAAABJRU5ErkJggg==" alt="Bridgp Dynamics logo" /></span>
         <span>Bridgp Dynamics</span>
-      </div>
-      <div class="sessionbar">
-        <span class="session-chip" id="sessionUser">Not signed in</span>
-        <button class="logout-btn" id="logoutBtn" type="button">Sign out</button>
       </div>
     </div>
   </div>
@@ -1028,7 +1036,7 @@
   function applyUserAccess(){
     if(!currentUser) return;
     const roleLabel = currentUser.role === 'external' ? 'External Auditor' : currentUser.role === 'admin' ? 'Administrator' : 'Internal Auditor';
-    sessionUser.textContent = `${currentUser.full_name} · ${roleLabel}`;
+    sessionUser.innerHTML = `<span class="chip-label">${escHtml(currentUser.full_name)} · ${escHtml(roleLabel)}</span>`;
     const navAdminLink = document.getElementById('navAdminLink');
     if(navAdminLink) navAdminLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
     elOrg.value = 'Vidullanka PLC'; audit.meta.org = 'Vidullanka PLC';
