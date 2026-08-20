@@ -716,6 +716,34 @@
   }
   let audit = blankAudit();
 
+  // ---------------- Local draft autosave (crash/expiry protection only —
+  // the database via "Save Record" remains the single source of truth) ----
+  const DRAFT_PREFIX = '5s_draft_';
+  let draftSaveTimer = null;
+  function draftKey(){ return currentUser ? DRAFT_PREFIX + currentUser.username : null; }
+  function saveDraftNow(){
+    const key = draftKey(); if(!key) return;
+    try{ localStorage.setItem(key, JSON.stringify({ audit, ts: Date.now() })); }catch(e){ /* storage unavailable/full - ignore */ }
+  }
+  function saveDraftDebounced(){ clearTimeout(draftSaveTimer); draftSaveTimer = setTimeout(saveDraftNow, 800); }
+  function clearDraft(){ const key = draftKey(); if(key){ try{ localStorage.removeItem(key); }catch(e){} } }
+  function readDraft(){
+    const key = draftKey(); if(!key) return null;
+    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+  }
+  function maybeRestoreDraft(){
+    const draft = readDraft();
+    if(!draft || !draft.audit) return;
+    const site = draft.audit.meta?.site || '(no site)', month = draft.audit.meta?.month || '(no month)';
+    const when = draft.ts ? new Date(draft.ts).toLocaleString() : 'earlier';
+    if(confirm(`An unsaved local draft was found for ${site} · ${month}, last changed ${when} (not yet saved to the database).\n\nRestore it? Cancel discards the draft.`)){ audit = draft.audit; }
+    else { clearDraft(); }
+  }
+  root.addEventListener('input', saveDraftDebounced);
+  root.addEventListener('click', saveDraftDebounced);
+  root.addEventListener('pointerup', saveDraftDebounced);
+  window.addEventListener('beforeunload', saveDraftNow);
+
   const $ = sel => root.querySelector(sel);
   const elOrg = $('#f-org'), elSite = $('#f-site'), elDept = $('#f-dept'), elMonth = $('#f-month'), elAuditor = $('#f-auditor'), elAuditorOther = $('#f-auditor-other');
   const auditorInternal = $('#auditorInternal'), auditorExternal = $('#auditorExternal');
@@ -1202,6 +1230,7 @@
       await refreshLoadSelect();
       const selectedValue=`${site}|${month}`;
       if([...elLoadSelect.options].some(o=>o.value===selectedValue)){ elLoadSelect.value=selectedValue; }
+      clearDraft();
       showStatus(`Loaded audit for ${site} · ${month}. Other accessible records remain available in the dropdown.`);
     }catch(e){ console.error(e); showStatus('Could not load that audit: '+e.message,true); }
   }
@@ -1230,6 +1259,7 @@
         organisation_id:audit.meta.organisationId, audit, overall_total:overallTotal
       })});
       audit.savedAt=body.audit?.saved_at||audit.savedAt; await refreshLoadSelect();
+      clearDraft();
       showStatus(`Saved ${audit.meta.site} · ${audit.meta.month} to Neon PostgreSQL.`);
     }catch(e){ console.error(e); showStatus('Could not save to database: '+e.message,true); }
   }
@@ -1245,6 +1275,7 @@
       audit.meta.auditorType=currentUser?.role==='external'?'external':'internal';
       const now=new Date(); audit.meta.month=now.toISOString().slice(0,7);
       fullRender(); await setupOrgField(); applyUserAccess(); await refreshLoadSelect();
+      clearDraft();
       showStatus(`Deleted audit for ${site} · ${month}.`);
     }catch(e){ console.error(e); showStatus('Could not delete from database: '+e.message,true); }
   }
@@ -1261,6 +1292,7 @@
     if(!user) throw new Error('Signed in but the user session could not be loaded.');
     authScreen.style.display='none'; root.style.display='block';
     audit=blankAudit(); audit.meta.month=new Date().toISOString().slice(0,7);
+    maybeRestoreDraft();
     await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); fullRender(); await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
   }
 
@@ -1486,6 +1518,7 @@
   $('#btnDelete').addEventListener('click', deleteAudit);
   $('#btnNew').addEventListener('click', async ()=>{
     if(!confirm('Start a new blank audit? Unsaved changes will be lost.')) return;
+    clearDraft();
     const keepSite = audit.meta.site, keepOrgId = audit.meta.organisationId, keepOrg = audit.meta.org;
     audit = blankAudit(); audit.meta.site = keepSite; audit.meta.organisationId = keepOrgId; audit.meta.org = keepOrg;
     const now = new Date(); audit.meta.month = now.toISOString().slice(0,7);
@@ -1511,6 +1544,7 @@
     if(user){
       authScreen.style.display='none'; root.style.display='block';
       audit.meta.month=new Date().toISOString().slice(0,7);
+      maybeRestoreDraft();
       await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); fullRender(); await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
     }else{ root.style.display='none'; authScreen.style.display='flex'; }
   })();
