@@ -125,7 +125,6 @@
     }
     .navbar.nav-open .nav-links{ display:flex; }
     .navbar a{ width:100%; text-align:left; padding:10px 12px; }
-    .nav-session .session-chip span.chip-label{ display:none; }
   }
 
   /* ---------- Meta bar ---------- */
@@ -320,7 +319,7 @@
   #loginBtn{width:100%;padding:11px 14px;background:var(--green);color:#fff;}
   #loginBtn:hover{background:var(--green-deep);}
   #loginMsg{min-height:20px;margin-top:10px;font-size:12.5px;color:var(--red);}
-  .session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;white-space:nowrap;}
+  .session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:140px;}
   .logout-btn{background:#fff;color:var(--ink);padding:6px 10px;font-size:11px;flex-shrink:0;}
   .auditor-type{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fdfdfb;min-height:37px;}
   .auditor-type label{font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px;}
