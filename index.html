@@ -60,6 +60,13 @@
     font-size:26px; margin:0 0 2px; font-weight:700;
   }
   .mast p.sub{margin:0; color:#C8CDD6; font-size:13.5px;}
+
+  /* mast-footer holds the brand chip + session bar. On desktop it stays
+     position:static so its absolutely-positioned children anchor to .mast
+     (which is position:relative) exactly like the original design. On
+     mobile it switches to a static flex row instead. */
+  .mast-footer{ position:static; }
+
   .mast-brand{
     display:flex; align-items:center; gap:9px;
     position:absolute; right:28px; bottom:16px;
@@ -79,9 +86,20 @@
 
   /* ---------- Nav bar ---------- */
   .navbar{
-    display:flex; gap:6px; align-items:center;
+    display:flex; gap:10px; align-items:center;
     background:#1b2430; padding:8px 28px;
+    position:relative;
   }
+  .nav-toggle{
+    display:none; flex-direction:column; justify-content:center; align-items:center;
+    gap:4px; width:36px; height:32px; background:transparent;
+    border:1px solid rgba(255,255,255,.22); border-radius:6px; padding:0; flex-shrink:0;
+  }
+  .nav-toggle span{ display:block; width:16px; height:2px; background:#C8CDD6; border-radius:2px; transition:transform .15s ease, opacity .15s ease; }
+  .navbar.nav-open .nav-toggle span:nth-child(1){ transform:translateY(6px) rotate(45deg); }
+  .navbar.nav-open .nav-toggle span:nth-child(2){ opacity:0; }
+  .navbar.nav-open .nav-toggle span:nth-child(3){ transform:translateY(-6px) rotate(-45deg); }
+  .nav-links{ display:flex; gap:6px; align-items:center; }
   .navbar a{
     color:#C8CDD6; text-decoration:none; font-size:13px; font-weight:600;
     padding:7px 14px; border-radius:6px;
@@ -89,8 +107,16 @@
   .navbar a.active{ background:#2f7a52; color:#fff; }
   .navbar a:hover:not(.active){ background:#2a3442; }
   @media (max-width:600px){
-    .navbar{ padding:8px 14px; flex-wrap:wrap; }
-    .navbar a{ flex:1 1 auto; text-align:center; }
+    .navbar{ padding:8px 14px; }
+    .nav-toggle{ display:flex; }
+    .nav-links{
+      display:none; position:absolute; top:100%; left:0; right:0;
+      background:#1b2430; flex-direction:column; align-items:stretch;
+      padding:8px 14px 14px; gap:4px; z-index:80;
+      box-shadow:0 8px 18px rgba(0,0,0,.25);
+    }
+    .navbar.nav-open .nav-links{ display:flex; }
+    .navbar a{ width:100%; text-align:left; padding:10px 12px; }
   }
 
   /* ---------- Meta bar ---------- */
@@ -174,7 +200,10 @@
     padding:11px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap;
   }
   .item:last-child{border-bottom:none;}
-  .item-label{flex:1; min-width:220px; font-size:13.5px;}\n  .item-label .si-text,.q14-item .si-text{display:block;margin-top:4px;font-family:'Noto Sans Sinhala',sans-serif;font-size:13px;line-height:1.55;color:#56606D;}\n  .item-label .si-text{padding-left:0;}\n  .q14-item .si-text{margin:4px 0 9px;}
+  .item-label{flex:1; min-width:220px; font-size:13.5px;}
+  .item-label .si-text,.q14-item .si-text{display:block;margin-top:4px;font-family:'Noto Sans Sinhala',sans-serif;font-size:13px;line-height:1.55;color:#56606D;}
+  .item-label .si-text{padding-left:0;}
+  .q14-item .si-text{margin:4px 0 9px;}
   .item-label .inum{color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:11.5px; margin-right:6px;}
 
   .pills{display:flex; gap:5px; flex-shrink:0;}
@@ -243,17 +272,31 @@
   .savedrow .meta{color:var(--ink-soft); font-size:11.5px;}
 
   @media (max-width: 640px){
-  .mast{padding:16px 16px 60px;}
-  .mast-brand{position:static; margin-top:12px; justify-content:flex-start;}
-  .sessionbar{position:static; margin-top:10px; justify-content:flex-start; flex-wrap:wrap;}
+  .mast{padding:16px 16px 18px;}
+  .mast-footer{
+    position:static;
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:10px; margin-top:14px;
+  }
+  .mast-brand{position:static; margin:0;}
+  .sessionbar{position:static; margin:0;}
   .metabar{padding:14px 16px; gap:12px;}
   .metabar .field{min-width:100%; flex:1 1 100%;}
   .metabar .btnrow{width:100%;}
   .metabar .btnrow button{flex:1 1 auto;}
   select#loadSelect{max-width:100%;}
-  .layout{padding:14px 16px 40px;}
+  .layout{padding:14px 16px 40px; flex-direction:column;}
+  .gaugecol{width:100%; position:static; order:2;}
+  .maincol{order:1;}
   .pill{width:30px; height:30px; font-size:12px;}
   .item-label{min-width:100%;}
+  .auth-card{padding:22px;}
+}
+
+  @media (max-width: 400px){
+  .pill{width:26px; height:26px; font-size:11px;}
+  .pills{gap:4px;}
+  .mast-brand span{display:none;}
 }
 
   /* ---------- Authentication ---------- */
@@ -275,19 +318,6 @@
   .auditor-type label{font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px;}
   .auditor-type input{accent-color:var(--green);}
   .readonly-field{background:#eef2ed !important;font-weight:600;}
-  @media (max-width: 640px) {
-  .mast-brand {
-    position: static;
-    justify-content: flex-end;
-    margin-top: 10px;
-  }
-  .sessionbar {
-    position: static;
-    margin-top: 8px;
-    justify-content: flex-end;
-  }
-  .mast { padding-top: 18px !important; }
-}
 
 </style>
 </head>
@@ -329,20 +359,27 @@
 
 <div id="jasteca-root" style="display:none;">
   <nav class="navbar" id="mainNav">
-    <a href="/" class="active">Audit</a>
-    <a href="/admin.html" id="navAdminLink" style="display:none;">Admin</a>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links">
+      <a href="/" class="active">Audit</a>
+      <a href="/admin.html" id="navAdminLink" style="display:none;">Admin</a>
+    </div>
   </nav>
   <div class="mast">
     <p class="mast-eyebrow">Vidullanka PLC · 5S Online Audit Form</p>
     <h1>5S Monthly Audit Sheet</h1>
     <p class="sub">Service &amp; Manufacturing Sectors — 5S, KPIs, and Japanese Management Implementations</p>
-    <div class="mast-brand">
-      <span class="brand-chip"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABgCAYAAACkLtSSAAAR2klEQVR4nOVdfXRV1ZX/7X3OfR/5DiEgiEgLIiCimFZtlT6rLr/F6hiQjqOttdhxdbWrtq4485mZmSlaKgUUq5UWNCoIISWQBHIhATTL0FEAAABJRU5ErkJggg==" alt="Bridgp Dynamics logo" /></span>
-      <span>Bridgp Dynamics</span>
-    </div>
-    <div class="sessionbar">
-      <span class="session-chip" id="sessionUser">Not signed in</span>
-      <button class="logout-btn" id="logoutBtn" type="button">Sign out</button>
+    <div class="mast-footer">
+      <div class="mast-brand">
+        <span class="brand-chip"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABgCAYAAACkLtSSAAAR2klEQVR4nOVdfXRV1ZX/7X3OfR/5DiEgiEgLIiCimFZtlT6rLr/F6hiQjqOttdhxdbWrtq4485mZmSlaKgUUq5UWNCoIISWQBHIhATTL0FEAAABJRU5ErkJggg==" alt="Bridgp Dynamics logo" /></span>
+        <span>Bridgp Dynamics</span>
+      </div>
+      <div class="sessionbar">
+        <span class="session-chip" id="sessionUser">Not signed in</span>
+        <button class="logout-btn" id="logoutBtn" type="button">Sign out</button>
+      </div>
     </div>
   </div>
 
@@ -561,10 +598,6 @@
     {id:'q5', label:'14.5', text:"i) Explain the role and commitment of your highest ranking Executive in Top Management initiatives. ii) Why is your highest ranking Executive the most suitable person to lead the JASTECA National Awards application?"},
   ];
 
-  // Sinhala translations for the checklist questions.
-  // The translations for 1.1–13.3 follow the supplied JASTECA 2026
-  // trilingual audit document; the remaining expanded checklist items are
-  // translated to match the English wording used in this online form.
   const SINHALA = {
     '1.1':'සියලුම කණ්ඩායම් සාමාජිකයින්ගේ 5S දැනුම / අවබෝධය / දැනුවත්භාවය',
     '1.2':'5S ගමනේ සියලුම කණ්ඩායම් සාමාජිකයින්ගේ සහභාගීත්වය, කැපවීම සහ සම්බන්ධතාවය',
@@ -663,21 +696,15 @@
   const GRAND_MAX = SECTIONS.reduce((a,s)=>a+s.max,0); // 410
   const Q14_MAX = 50;
 
-  // ---------------- State ----------------
   function blankAudit(){
     return {
       meta:{org:'Vidullanka PLC', site:'', dept:'', month:'', auditor:'', auditorType:''},
-      scores:{},          // itemKey -> 1..5
-      sectionNotes:{},    // sectionId -> text
-      q14:{ text:{}, score:{} }, // qid -> text / score(0-10)
-      specialNote:'',
-      signature:{dataUrl:'', signedAt:null},
-      savedAt:null
+      scores:{}, sectionNotes:{}, q14:{ text:{}, score:{} },
+      specialNote:'', signature:{dataUrl:'', signedAt:null}, savedAt:null
     };
   }
   let audit = blankAudit();
 
-  // ---------------- DOM refs ----------------
   const $ = sel => root.querySelector(sel);
   const elOrg = $('#f-org'), elSite = $('#f-site'), elDept = $('#f-dept'), elMonth = $('#f-month'), elAuditor = $('#f-auditor'), elAuditorOther = $('#f-auditor-other');
   const auditorInternal = $('#auditorInternal'), auditorExternal = $('#auditorExternal');
@@ -688,7 +715,6 @@
   const logoutBtn = document.getElementById('logoutBtn');
   let currentUser = null;
   const elLoadSelect = $('#loadSelect');
-  const elStatus = $('#statusMsg');
   const sectionsWrap = $('#sectionsWrap');
   const bottomWrap = $('#bottomWrap');
   const gaugeScore = $('#gaugeScore');
@@ -696,58 +722,43 @@
   const gaugeSvg = $('#gaugeSvg');
   const breakdownEl = $('#breakdown');
 
-  // populate site dropdown
   SITES.forEach(s=>{
     const opt = document.createElement('option');
     opt.value = s; opt.textContent = s;
     elSite.appendChild(opt);
   });
 
-  // ---------------- Rendering: sections ----------------
   function itemKey(sectionId, code){ return sectionId+'_'+code; }
-
   function sectionTotal(section){
     let t=0;
-    section.items.forEach(([code])=>{
-      const v = audit.scores[itemKey(section.id, code)];
-      if(v) t+=v;
-    });
+    section.items.forEach(([code])=>{ const v = audit.scores[itemKey(section.id, code)]; if(v) t+=v; });
     return t;
+  }
+
+  function escHtml(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
   function renderSections(){
     sectionsWrap.innerHTML='';
     SECTIONS.forEach(section=>{
       const card = document.createElement('div');
-      card.className='section';
-      card.dataset.sec = section.id;
-
+      card.className='section'; card.dataset.sec = section.id;
       const head = document.createElement('div');
       head.className='section-head';
-      head.innerHTML = `
-        <div>
-          <span class="snum">${section.num}</span><h3 class="serif">${section.title}</h3>
-          <p class="sdesc">${section.desc}</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span class="stotal">${sectionTotal(section)} / ${section.max}</span>
-          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>`;
+      head.innerHTML = `<div><span class="snum">${section.num}</span><h3 class="serif">${section.title}</h3><p class="sdesc">${section.desc}</p></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span class="stotal">${sectionTotal(section)} / ${section.max}</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
       head.addEventListener('click', ()=>{
         card.classList.toggle('open');
         const body = card.querySelector('.section-body');
         body.style.maxHeight = card.classList.contains('open') ? body.scrollHeight+400+'px' : '0px';
       });
-
-      const body = document.createElement('div');
-      body.className='section-body';
-      const inner = document.createElement('div');
-      inner.className='section-body-inner';
-
+      const body = document.createElement('div'); body.className='section-body';
+      const inner = document.createElement('div'); inner.className='section-body-inner';
       section.items.forEach(([code,label])=>{
         const key = itemKey(section.id, code);
-        const row = document.createElement('div');
-        row.className='item';
+        const row = document.createElement('div'); row.className='item';
         const pillsHtml = [1,2,3,4,5].map(v=>{
           const sel = audit.scores[key]===v ? 'selected':'';
           return `<div class="pill ${sel}" data-v="${v}" data-key="${key}" title="${RATING_LABELS[v-1]}">${v}</div>`;
@@ -756,44 +767,27 @@
         row.innerHTML = `<div class="item-label"><span class="inum">${code}</span><span class="en-text">${escHtml(label)}</span>${sinhala ? `<span class="si-text">${escHtml(sinhala)}</span>` : ''}</div><div class="pills">${pillsHtml}</div>`;
         inner.appendChild(row);
       });
-
-      // legend
-      const legend = document.createElement('div');
-      legend.className='legend';
+      const legend = document.createElement('div'); legend.className='legend';
       legend.innerHTML = RATING_LABELS.map((l,i)=>`<span><i style="background:${RATING_COLORS[i]}"></i>${i+1} · ${l}</span>`).join('');
       inner.appendChild(legend);
-
-      // notes toggle
-      const notesToggle = document.createElement('span');
-      notesToggle.className='notes-toggle';
+      const notesToggle = document.createElement('span'); notesToggle.className='notes-toggle';
       notesToggle.textContent = '+ Add notes / evidence for this section';
-      const notesArea = document.createElement('div');
-      notesArea.className='notes-area';
+      const notesArea = document.createElement('div'); notesArea.className='notes-area';
       notesArea.innerHTML = `<textarea placeholder="Optional: observations, evidence references, corrective actions...">${audit.sectionNotes[section.id]||''}</textarea>`;
       notesToggle.addEventListener('click', ()=>{
         notesArea.classList.toggle('show');
         notesToggle.textContent = notesArea.classList.contains('show') ? '– Hide notes' : '+ Add notes / evidence for this section';
       });
       if(audit.sectionNotes[section.id]) notesArea.classList.add('show');
-      notesArea.querySelector('textarea').addEventListener('input', e=>{
-        audit.sectionNotes[section.id]=e.target.value;
-      });
-      inner.appendChild(notesToggle);
-      inner.appendChild(notesArea);
-
-      body.appendChild(inner);
-      card.appendChild(head);
-      card.appendChild(body);
+      notesArea.querySelector('textarea').addEventListener('input', e=>{ audit.sectionNotes[section.id]=e.target.value; });
+      inner.appendChild(notesToggle); inner.appendChild(notesArea);
+      body.appendChild(inner); card.appendChild(head); card.appendChild(body);
       sectionsWrap.appendChild(card);
     });
-
-    // pill click handling (event delegation)
     sectionsWrap.onclick = e=>{
-      const pill = e.target.closest('.pill');
-      if(!pill) return;
-      const key = pill.dataset.key;
-      const v = parseInt(pill.dataset.v,10);
-      audit.scores[key] = (audit.scores[key]===v) ? undefined : v; // click again to clear
+      const pill = e.target.closest('.pill'); if(!pill) return;
+      const key = pill.dataset.key; const v = parseInt(pill.dataset.v,10);
+      audit.scores[key] = (audit.scores[key]===v) ? undefined : v;
       if(audit.scores[key]===undefined) delete audit.scores[key];
       refreshAll();
     };
@@ -801,8 +795,7 @@
 
   function refreshSectionTotals(){
     SECTIONS.forEach(section=>{
-      const card = sectionsWrap.querySelector(`.section[data-sec="${section.id}"]`);
-      if(!card) return;
+      const card = sectionsWrap.querySelector(`.section[data-sec="${section.id}"]`); if(!card) return;
       card.querySelector('.stotal').textContent = `${sectionTotal(section)} / ${section.max}`;
       card.querySelectorAll('.pill').forEach(p=>{
         const key = p.dataset.key, v = parseInt(p.dataset.v,10);
@@ -811,69 +804,32 @@
     });
   }
 
-  // ---------------- Section 14 ----------------
-  function q14Total(){
-    return Q14.reduce((a,q)=> a + (audit.q14.score[q.id]||0), 0);
-  }
+  function q14Total(){ return Q14.reduce((a,q)=> a + (audit.q14.score[q.id]||0), 0); }
 
   function renderQ14(){
-    const card = document.createElement('div');
-    card.className='section';
-    card.id='q14card';
-    const head = document.createElement('div');
-    head.className='section-head';
-    head.innerHTML = `
-      <div>
-        <span class="snum">14</span><h3 class="serif">Other Japanese Management Practices</h3>
-        <p class="sdesc">Concise written responses (max 100 words each) supported by photographs / records / evidence.</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="stotal" id="q14total">${q14Total()} / ${Q14_MAX}</span>
-        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>`;
+    const card = document.createElement('div'); card.className='section'; card.id='q14card';
+    const head = document.createElement('div'); head.className='section-head';
+    head.innerHTML = `<div><span class="snum">14</span><h3 class="serif">Other Japanese Management Practices</h3><p class="sdesc">Concise written responses (max 100 words each) supported by photographs / records / evidence.</p></div>
+      <div style="display:flex;align-items:center;gap:10px;"><span class="stotal" id="q14total">${q14Total()} / ${Q14_MAX}</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
     head.addEventListener('click', ()=>{
       card.classList.toggle('open');
       const body = card.querySelector('.section-body');
       body.style.maxHeight = card.classList.contains('open') ? body.scrollHeight+400+'px' : '0px';
     });
-
-    const body = document.createElement('div');
-    body.className='section-body';
-    const inner = document.createElement('div');
-    inner.className='q14';
-
+    const body = document.createElement('div'); body.className='section-body';
+    const inner = document.createElement('div'); inner.className='q14';
     Q14.forEach(q=>{
-      const wrap = document.createElement('div');
-      wrap.className='q14-item';
-      const savedText = audit.q14.text[q.id]||'';
-      const savedScore = audit.q14.score[q.id]!==undefined ? audit.q14.score[q.id] : '';
-      wrap.innerHTML = `
-        <div class="qhead"><span class="qnum">${q.label}</span></div>
-        <p class="qtext">${escHtml(q.text)}</p>
+      const wrap = document.createElement('div'); wrap.className='q14-item';
+      const savedText = audit.q14.text[q.id]||''; const savedScore = audit.q14.score[q.id]!==undefined ? audit.q14.score[q.id] : '';
+      wrap.innerHTML = `<div class="qhead"><span class="qnum">${q.label}</span></div><p class="qtext">${escHtml(q.text)}</p>
         ${Q14_SINHALA[q.id] ? `<div class="si-text">${escHtml(Q14_SINHALA[q.id])}</div>` : ''}
         <textarea placeholder="Write response here (max ~100 words), reference evidence attached separately...">${escHtml(savedText)}</textarea>
-        <div class="q14-foot">
-          <span class="wordcount">0 words</span>
-          <div class="scoreinput">
-            <label>Score</label>
-            <input type="number" min="0" max="10" step="1" value="${savedScore}" placeholder="0–10" />
-            <span style="font-size:11px;color:var(--ink-soft);">/ 10</span>
-          </div>
-        </div>`;
-      const ta = wrap.querySelector('textarea');
-      const wc = wrap.querySelector('.wordcount');
-      const scoreInput = wrap.querySelector('.scoreinput input');
-
-      function updWc(){
-        const words = ta.value.trim().length ? ta.value.trim().split(/\s+/).length : 0;
-        wc.textContent = words + ' words';
-        wc.classList.toggle('over', words>100);
-      }
+        <div class="q14-foot"><span class="wordcount">0 words</span><div class="scoreinput"><label>Score</label><input type="number" min="0" max="10" step="1" value="${savedScore}" placeholder="0–10" /><span style="font-size:11px;color:var(--ink-soft);">/ 10</span></div></div>`;
+      const ta = wrap.querySelector('textarea'); const wc = wrap.querySelector('.wordcount'); const scoreInput = wrap.querySelector('.scoreinput input');
+      function updWc(){ const words = ta.value.trim().length ? ta.value.trim().split(/\s+/).length : 0; wc.textContent = words + ' words'; wc.classList.toggle('over', words>100); }
       updWc();
-      ta.addEventListener('input', ()=>{
-        audit.q14.text[q.id]=ta.value;
-        updWc();
-      });
+      ta.addEventListener('input', ()=>{ audit.q14.text[q.id]=ta.value; updWc(); });
       scoreInput.addEventListener('input', ()=>{
         let v = scoreInput.value==='' ? undefined : Math.max(0,Math.min(10, parseInt(scoreInput.value,10)||0));
         if(v===undefined){ delete audit.q14.score[q.id]; } else { audit.q14.score[q.id]=v; }
@@ -881,335 +837,156 @@
       });
       inner.appendChild(wrap);
     });
-
-    body.appendChild(inner);
-    card.appendChild(head);
-    card.appendChild(body);
+    body.appendChild(inner); card.appendChild(head); card.appendChild(body);
     return card;
   }
 
-  function refreshQ14Total(){
-    const t = document.getElementById('q14total');
-    if(t) t.textContent = `${q14Total()} / ${Q14_MAX}`;
-  }
+  function refreshQ14Total(){ const t = document.getElementById('q14total'); if(t) t.textContent = `${q14Total()} / ${Q14_MAX}`; }
 
-  // ---------------- Bottom: special note + grand total ----------------
   function renderBottom(){
     bottomWrap.innerHTML='';
-    const q14card = renderQ14();
-    bottomWrap.appendChild(q14card);
-
-    const noteCard = document.createElement('div');
-    noteCard.className='section';
-    noteCard.style.marginTop='14px';
-    noteCard.innerHTML = `<div style="padding:16px 18px;">
-      <label style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:600;">Special note by the auditors</label>
-      <textarea id="specialNote" style="width:100%;min-height:70px;margin-top:8px;font-family:inherit;font-size:13.5px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;resize:vertical;">${audit.specialNote||''}</textarea>
-    </div>`;
+    bottomWrap.appendChild(renderQ14());
+    const noteCard = document.createElement('div'); noteCard.className='section'; noteCard.style.marginTop='14px';
+    noteCard.innerHTML = `<div style="padding:16px 18px;"><label style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:600;">Special note by the auditors</label>
+      <textarea id="specialNote" style="width:100%;min-height:70px;margin-top:8px;font-family:inherit;font-size:13.5px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;resize:vertical;">${audit.specialNote||''}</textarea></div>`;
     bottomWrap.appendChild(noteCard);
     noteCard.querySelector('#specialNote').addEventListener('input', e=>{ audit.specialNote = e.target.value; });
-
-    const grand = document.createElement('div');
-    grand.className='grandcard';
-    grand.style.marginTop='14px';
-    grand.innerHTML = `
-      <div>
-        <div class="gt-label">Grand total (5S sections 1–13 + Q14)</div>
-        <div class="gt-score" id="grandScoreLine">0 / ${GRAND_MAX + Q14_MAX}</div>
-      </div>`;
+    const grand = document.createElement('div'); grand.className='grandcard'; grand.style.marginTop='14px';
+    grand.innerHTML = `<div><div class="gt-label">Grand total (5S sections 1–13 + Q14)</div><div class="gt-score" id="grandScoreLine">0 / ${GRAND_MAX + Q14_MAX}</div></div>`;
     bottomWrap.appendChild(grand);
-
     const currentTotal = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
-    const sigCard = document.createElement('div');
-    sigCard.className = 'signature-card';
-    sigCard.innerHTML = `
-      <h3>Auditor E-Signature</h3>
-      <p class="sig-help">After the marks are finalized, the auditor must sign below. The signature is saved with this audit.</p>
-      <div class="signature-summary">
-        <span><b>Plant Site:</b> <span id="sigSite">${escHtml(audit.meta.site || 'Not selected')}</span></span>
-        <span><b>Final Score:</b> <span id="sigTotal">${currentTotal} / ${GRAND_MAX + Q14_MAX}</span></span>
-        <span><b>Auditor:</b> <span id="sigAuditor">${escHtml(audit.meta.auditor || 'Not entered')}</span></span>
-      </div>
-      <div class="signature-pad-wrap">
-        <canvas id="signatureCanvas" aria-label="Auditor electronic signature area"></canvas>
-      </div>
-      <div class="signature-actions">
-        <button class="btn-ghost btn-sm" id="btnClearSignature" type="button">Clear Signature</button>
-        <span class="signature-status ${audit.signature && audit.signature.dataUrl ? 'signed' : ''}" id="signatureStatus">
-          ${audit.signature && audit.signature.dataUrl
-            ? '✓ Signature captured' + (audit.signature.signedAt ? ' · ' + new Date(audit.signature.signedAt).toLocaleString() : '')
-            : 'Please sign above after confirming the final score.'}
-        </span>
-      </div>
-    `;
+    const sigCard = document.createElement('div'); sigCard.className = 'signature-card';
+    sigCard.innerHTML = `<h3>Auditor E-Signature</h3><p class="sig-help">After the marks are finalized, the auditor must sign below. The signature is saved with this audit.</p>
+      <div class="signature-summary"><span><b>Plant Site:</b> <span id="sigSite">${escHtml(audit.meta.site || 'Not selected')}</span></span>
+      <span><b>Final Score:</b> <span id="sigTotal">${currentTotal} / ${GRAND_MAX + Q14_MAX}</span></span>
+      <span><b>Auditor:</b> <span id="sigAuditor">${escHtml(audit.meta.auditor || 'Not entered')}</span></span></div>
+      <div class="signature-pad-wrap"><canvas id="signatureCanvas" aria-label="Auditor electronic signature area"></canvas></div>
+      <div class="signature-actions"><button class="btn-ghost btn-sm" id="btnClearSignature" type="button">Clear Signature</button>
+      <span class="signature-status ${audit.signature && audit.signature.dataUrl ? 'signed' : ''}" id="signatureStatus">
+      ${audit.signature && audit.signature.dataUrl ? '✓ Signature captured' + (audit.signature.signedAt ? ' · ' + new Date(audit.signature.signedAt).toLocaleString() : '') : 'Please sign above after confirming the final score.'}</span></div>`;
     bottomWrap.appendChild(sigCard);
-
-    const saveCard = document.createElement('div');
-    saveCard.className='section';
-    saveCard.style.marginTop='14px';
-    saveCard.innerHTML = `
-      <div style="padding:16px 18px;">
-        <div style="background:#fff8e8;border:1px solid #e2c36b;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.5;">
-          <b>Important:</b> Do not click <b>Save Audit</b> until all marks, Q14 written responses, the Special Note by the Auditor, and the e-signature have been completed and checked.
-        </div>
-        <button class="btn-primary" id="btnSave" type="button" style="width:100%;">Save Audit</button>
-      </div>`;
+    const saveCard = document.createElement('div'); saveCard.className='section'; saveCard.style.marginTop='14px';
+    saveCard.innerHTML = `<div style="padding:16px 18px;"><div style="background:#fff8e8;border:1px solid #e2c36b;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.5;">
+      <b>Important:</b> Do not click <b>Save Audit</b> until all marks, Q14 written responses, the Special Note by the Auditor, and the e-signature have been completed and checked.</div>
+      <button class="btn-primary" id="btnSave" type="button" style="width:100%;">Save Audit</button></div>`;
     bottomWrap.appendChild(saveCard);
     saveCard.querySelector('#btnSave').addEventListener('click', saveAudit);
     initSignaturePad();
   }
 
-  // ---------------- Auditor E-Signature ----------------
-  function escHtml(s){
-    return String(s==null?'':s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-
   function initSignaturePad(){
-    const canvas = document.getElementById('signatureCanvas');
-    const clearBtn = document.getElementById('btnClearSignature');
+    const canvas = document.getElementById('signatureCanvas'); const clearBtn = document.getElementById('btnClearSignature');
     if(!canvas || !clearBtn) return;
-
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
-
+    const ctx = canvas.getContext('2d'); let drawing = false;
     function setupCanvas(){
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.max(1, Math.round(rect.width*dpr));
-      canvas.height = Math.max(1, Math.round(rect.height*dpr));
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      ctx.lineWidth = 2.2;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#1B2430';
-
-      if(audit.signature && audit.signature.dataUrl){
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img,0,0,rect.width,rect.height);
-        img.src = audit.signature.dataUrl;
-      }
+      const rect = canvas.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width*dpr)); canvas.height = Math.max(1, Math.round(rect.height*dpr));
+      ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1B2430';
+      if(audit.signature && audit.signature.dataUrl){ const img = new Image(); img.onload = () => ctx.drawImage(img,0,0,rect.width,rect.height); img.src = audit.signature.dataUrl; }
     }
-
-    function point(e){
-      const r = canvas.getBoundingClientRect();
-      return {x:e.clientX-r.left,y:e.clientY-r.top};
-    }
-
-    function start(e){
-      drawing = true;
-      canvas.setPointerCapture?.(e.pointerId);
-      const p = point(e);
-      ctx.beginPath();
-      ctx.moveTo(p.x,p.y);
-      e.preventDefault();
-    }
-
-    function move(e){
-      if(!drawing) return;
-      const p = point(e);
-      ctx.lineTo(p.x,p.y);
-      ctx.stroke();
-      e.preventDefault();
-    }
-
+    function point(e){ const r = canvas.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
+    function start(e){ drawing = true; canvas.setPointerCapture?.(e.pointerId); const p = point(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+    function move(e){ if(!drawing) return; const p = point(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
     function end(e){
-      if(!drawing) return;
-      drawing = false;
-      ctx.closePath();
-      audit.signature.dataUrl = canvas.toDataURL('image/png');
-      audit.signature.signedAt = new Date().toISOString();
-
+      if(!drawing) return; drawing = false; ctx.closePath();
+      audit.signature.dataUrl = canvas.toDataURL('image/png'); audit.signature.signedAt = new Date().toISOString();
       const status = document.getElementById('signatureStatus');
-      if(status){
-        status.textContent = '✓ Signature captured · ' + new Date(audit.signature.signedAt).toLocaleString();
-        status.classList.add('signed');
-      }
+      if(status){ status.textContent = '✓ Signature captured · ' + new Date(audit.signature.signedAt).toLocaleString(); status.classList.add('signed'); }
       e.preventDefault();
     }
-
-    canvas.addEventListener('pointerdown',start);
-    canvas.addEventListener('pointermove',move);
-    canvas.addEventListener('pointerup',end);
-    canvas.addEventListener('pointercancel',end);
-    canvas.addEventListener('pointerleave',end);
-
+    canvas.addEventListener('pointerdown',start); canvas.addEventListener('pointermove',move);
+    canvas.addEventListener('pointerup',end); canvas.addEventListener('pointercancel',end); canvas.addEventListener('pointerleave',end);
     clearBtn.addEventListener('click',()=>{
-      ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
-      audit.signature={dataUrl:'',signedAt:null};
+      ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight); audit.signature={dataUrl:'',signedAt:null};
       const status=document.getElementById('signatureStatus');
-      if(status){
-        status.textContent='Please sign above after confirming the final score.';
-        status.classList.remove('signed');
-      }
+      if(status){ status.textContent='Please sign above after confirming the final score.'; status.classList.remove('signed'); }
     });
-
     setupCanvas();
   }
 
-  // ---------------- Gauge ----------------
   function drawGauge(){
     const total = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0);
     const pct = Math.max(0, Math.min(1, total/GRAND_MAX));
     const cx=100, cy=100, r=80;
-    const startAngle = Math.PI, endAngle = Math.PI + Math.PI*pct;
+    const startAngle = Math.PI;
     function pt(a){ return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; }
-    const [x1,y1] = pt(Math.PI);
-    const [x2,y2] = pt(Math.PI*2);
-    const [x3,y3] = pt(startAngle+ (Math.PI*pct));
+    const [x1,y1] = pt(Math.PI); const [x2,y2] = pt(Math.PI*2); const [x3,y3] = pt(startAngle+ (Math.PI*pct));
     const largeArc = pct>0.5 ? 1 : 0;
-
-    let color = '#B5533C';
-    let band = 'Needs attention';
-    if(pct>=0.85){color='#2F7A52'; band='Excellent';}
-    else if(pct>=0.7){color='#7FA23E'; band='Very good';}
-    else if(pct>=0.55){color='#C99A3E'; band='Good';}
-    else if(pct>=0.35){color='#C77B3E'; band='Fair';}
-
-    gaugeSvg.innerHTML = `
-      <path d="M ${x1} ${y1} A ${r} ${r} 0 1 1 ${x2} ${y2}" fill="none" stroke="#EAEDE6" stroke-width="14" stroke-linecap="round"/>
-      ${pct>0 ? `<path d="M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x3} ${y3}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"/>` : ''}
-    `;
-    gaugeScore.textContent = total;
-    gaugeScore.style.color = color;
-    gaugeBand.textContent = band;
-    gaugeBand.style.background = color+'22';
-    gaugeBand.style.color = color;
+    let color = '#B5533C'; let band = 'Needs attention';
+    if(pct>=0.85){color='#2F7A52'; band='Excellent';} else if(pct>=0.7){color='#7FA23E'; band='Very good';}
+    else if(pct>=0.55){color='#C99A3E'; band='Good';} else if(pct>=0.35){color='#C77B3E'; band='Fair';}
+    gaugeSvg.innerHTML = `<path d="M ${x1} ${y1} A ${r} ${r} 0 1 1 ${x2} ${y2}" fill="none" stroke="#EAEDE6" stroke-width="14" stroke-linecap="round"/>
+      ${pct>0 ? `<path d="M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x3} ${y3}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"/>` : ''}`;
+    gaugeScore.textContent = total; gaugeScore.style.color = color; gaugeBand.textContent = band; gaugeBand.style.background = color+'22'; gaugeBand.style.color = color;
   }
 
   function renderBreakdown(){
     breakdownEl.innerHTML = SECTIONS.map(s=>{
-      const t = sectionTotal(s);
-      const pct = Math.round((t/s.max)*100);
-      return `<div class="brow"><span>${s.num}. ${s.title}</span><b>${t}/${s.max}</b></div>
-        <div class="bartrack"><div class="barfill" style="width:${pct}%;"></div></div>`;
+      const t = sectionTotal(s); const pct = Math.round((t/s.max)*100);
+      return `<div class="brow"><span>${s.num}. ${s.title}</span><b>${t}/${s.max}</b></div><div class="bartrack"><div class="barfill" style="width:${pct}%;"></div></div>`;
     }).join('');
   }
 
   function refreshAll(){
-    refreshSectionTotals();
-    refreshQ14Total();
-    drawGauge();
-    renderBreakdown();
+    refreshSectionTotals(); refreshQ14Total(); drawGauge(); renderBreakdown();
     const line = document.getElementById('grandScoreLine');
     if(line){
       const total = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
       line.textContent = `${total} / ${GRAND_MAX + Q14_MAX}`;
-      const sigTotal=document.getElementById('sigTotal');
-      if(sigTotal) sigTotal.textContent=`${total} / ${GRAND_MAX + Q14_MAX}`;
-      const sigAuditor=document.getElementById('sigAuditor');
-      if(sigAuditor) sigAuditor.textContent=audit.meta.auditor || 'Not entered';
-      const sigSite=document.getElementById('sigSite');
-      if(sigSite) sigSite.textContent=audit.meta.site || 'Not selected';
+      const sigTotal=document.getElementById('sigTotal'); if(sigTotal) sigTotal.textContent=`${total} / ${GRAND_MAX + Q14_MAX}`;
+      const sigAuditor=document.getElementById('sigAuditor'); if(sigAuditor) sigAuditor.textContent=audit.meta.auditor || 'Not entered';
+      const sigSite=document.getElementById('sigSite'); if(sigSite) sigSite.textContent=audit.meta.site || 'Not selected';
     }
   }
 
-  // ---------------- Meta binding ----------------
   function bindMeta(){
-    elOrg.value = 'Vidullanka PLC';
-    audit.meta.org = 'Vidullanka PLC';
-    elSite.value = audit.meta.site||'';
-    elDept.value = audit.meta.dept||'';
-    elMonth.value = audit.meta.month||'';
+    elOrg.value = 'Vidullanka PLC'; audit.meta.org = 'Vidullanka PLC';
+    elSite.value = audit.meta.site||''; elDept.value = audit.meta.dept||''; elMonth.value = audit.meta.month||'';
     elAuditor.value = audit.meta.auditor || currentUser?.full_name || '';
     if(!audit.meta.auditor) audit.meta.auditor = currentUser?.full_name || '';
-    if(!audit.meta.auditorType){
-      audit.meta.auditorType = currentUser?.role === 'external' ? 'external' : 'internal';
-    }
+    if(!audit.meta.auditorType){ audit.meta.auditorType = currentUser?.role === 'external' ? 'external' : 'internal'; }
     if(auditorInternal) auditorInternal.checked = audit.meta.auditorType === 'internal';
     if(auditorExternal) auditorExternal.checked = audit.meta.auditorType === 'external';
   }
-  elSite.addEventListener('change', async e=>{
-    audit.meta.site=e.target.value;
-    await refreshLoadSelect();
-    refreshAll();
-  });
+  elSite.addEventListener('change', async e=>{ audit.meta.site=e.target.value; await refreshLoadSelect(); refreshAll(); });
   elDept.addEventListener('input', e=> audit.meta.dept=e.target.value);
   elMonth.addEventListener('input', e=> audit.meta.month=e.target.value);
 
-  function fullRender(){
-    bindMeta();
-    renderSections();
-    renderBottom();
-    refreshAll();
-  }
+  function fullRender(){ bindMeta(); renderSections(); renderBottom(); refreshAll(); }
 
-  // ---------------- Neon PostgreSQL API storage ----------------
-  // The browser never receives the Neon connection string. All database access
-  // goes through the same-origin /api endpoints, which use DATABASE_URL on the server.
   let dbReady = false;
-
   async function api(path, options={}){
     const res = await fetch(path, {credentials:'same-origin', ...options, headers:{'Content-Type':'application/json', ...(options.headers||{})}});
-    let body={};
-    try{ body=await res.json(); }catch(_e){}
+    let body={}; try{ body=await res.json(); }catch(_e){}
     if(!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
     return body;
   }
-
   async function loadCurrentUser(){
-    try{
-      const body = await api('/api/me');
-      currentUser = body.user;
-      dbReady = true;
-      return currentUser;
-    }catch(e){
-      currentUser = null;
-      dbReady = false;
-      return null;
-    }
+    try{ const body = await api('/api/me'); currentUser = body.user; dbReady = true; return currentUser; }
+    catch(e){ currentUser = null; dbReady = false; return null; }
   }
 
   let auditorDirectory = [];
-
   async function refreshAuditorOptions(){
     if(!currentUser) return;
     try{
       const body=await api('/api/auditors');
-      auditorDirectory=(body.auditors||[]).map(a=>({
-        full_name:String(a.full_name||'').trim(),
-        role:(a.role||'internal').toLowerCase()==='external'?'external':'internal',
-        sites:Array.isArray(a.sites)?a.sites:[]
-      })).filter(a=>a.full_name);
-
-      // Always include the signed-in user even if the API directory is temporarily
-      // missing that user.
+      auditorDirectory=(body.auditors||[]).map(a=>({ full_name:String(a.full_name||'').trim(), role:(a.role||'internal').toLowerCase()==='external'?'external':'internal', sites:Array.isArray(a.sites)?a.sites:[] })).filter(a=>a.full_name);
       if(!auditorDirectory.some(a=>a.full_name===currentUser.full_name)){
-        auditorDirectory.unshift({
-          full_name:currentUser.full_name,
-          role:currentUser.role==='external'?'external':'internal',
-          sites:currentUser.sites||[]
-        });
+        auditorDirectory.unshift({ full_name:currentUser.full_name, role:currentUser.role==='external'?'external':'internal', sites:currentUser.sites||[] });
       }
-
-      const options = auditorDirectory.map(a =>
-        `<option value="${escHtml(a.full_name)}">${escHtml(a.full_name)} · ${a.role==='external'?'External Auditor':'Internal Auditor'}</option>`
-      ).join('');
-
-      elAuditor.innerHTML =
-        '<option value="">— select auditor —</option>' +
-        options +
-        '<option value="__other__">Other / Enter name</option>';
-
+      const options = auditorDirectory.map(a => `<option value="${escHtml(a.full_name)}">${escHtml(a.full_name)} · ${a.role==='external'?'External Auditor':'Internal Auditor'}</option>`).join('');
+      elAuditor.innerHTML = '<option value="">— select auditor —</option>' + options + '<option value="__other__">Other / Enter name</option>';
       const current=audit.meta.auditor || currentUser.full_name || '';
-      if(auditorDirectory.some(a=>a.full_name===current)){
-        elAuditor.value=current;
-        elAuditorOther.style.display='none';
-        syncAuditorTypeFromSelection();
-      }else if(current){
-        elAuditor.value='__other__';
-        elAuditorOther.style.display='block';
-        elAuditorOther.value=current;
+      if(auditorDirectory.some(a=>a.full_name===current)){ elAuditor.value=current; elAuditorOther.style.display='none'; syncAuditorTypeFromSelection(); }
+      else if(current){
+        elAuditor.value='__other__'; elAuditorOther.style.display='block'; elAuditorOther.value=current;
         if(!audit.meta.auditorType) audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
-        auditorInternal.disabled=false;
-        auditorExternal.disabled=false;
-        auditorInternal.checked=audit.meta.auditorType==='internal';
-        auditorExternal.checked=audit.meta.auditorType==='external';
+        auditorInternal.disabled=false; auditorExternal.disabled=false;
+        auditorInternal.checked=audit.meta.auditorType==='internal'; auditorExternal.checked=audit.meta.auditorType==='external';
       }
     }catch(e){
       console.error(e);
-      // Keep the current user usable even if the auditor directory endpoint fails.
       elAuditor.innerHTML='<option value="">— select auditor —</option>' +
         `<option value="${escHtml(currentUser.full_name)}">${escHtml(currentUser.full_name)} · ${currentUser.role==='external'?'External Auditor':'Internal Auditor'}</option>` +
         '<option value="__other__">Other / Enter name</option>';
@@ -1219,232 +996,102 @@
   }
 
   function syncAuditorTypeFromSelection(){
-    const name=elAuditor.value;
-    const found=auditorDirectory.find(a=>a.full_name===name);
+    const name=elAuditor.value; const found=auditorDirectory.find(a=>a.full_name===name);
     if(found){
-      audit.meta.auditor=found.full_name;
-      audit.meta.auditorType=found.role;
-      auditorInternal.checked=found.role==='internal';
-      auditorExternal.checked=found.role==='external';
-      auditorInternal.disabled=true;
-      auditorExternal.disabled=true;
-      elAuditorOther.style.display='none';
-      elAuditorOther.value='';
+      audit.meta.auditor=found.full_name; audit.meta.auditorType=found.role;
+      auditorInternal.checked=found.role==='internal'; auditorExternal.checked=found.role==='external';
+      auditorInternal.disabled=true; auditorExternal.disabled=true; elAuditorOther.style.display='none'; elAuditorOther.value='';
     }else if(name==='__other__'){
-      auditorInternal.disabled=false;
-      auditorExternal.disabled=false;
+      auditorInternal.disabled=false; auditorExternal.disabled=false;
       const role=audit.meta.auditorType || (currentUser?.role==='external'?'external':'internal');
-      auditorInternal.checked=role==='internal';
-      auditorExternal.checked=role==='external';
-      elAuditorOther.style.display='block';
+      auditorInternal.checked=role==='internal'; auditorExternal.checked=role==='external'; elAuditorOther.style.display='block';
     }
   }
 
   function applyAuditorSelection(){
     const v=elAuditor.value;
-    if(v==='__other__'){
-      audit.meta.auditor=elAuditorOther.value.trim();
-      audit.meta.auditorType=auditorExternal.checked?'external':'internal';
-    }else if(v){
-      const found=auditorDirectory.find(a=>a.full_name===v);
-      audit.meta.auditor=found?.full_name || v;
-      audit.meta.auditorType=found?.role || audit.meta.auditorType || 'internal';
-    }else{
-      audit.meta.auditor='';
-      audit.meta.auditorType='';
-    }
+    if(v==='__other__'){ audit.meta.auditor=elAuditorOther.value.trim(); audit.meta.auditorType=auditorExternal.checked?'external':'internal'; }
+    else if(v){ const found=auditorDirectory.find(a=>a.full_name===v); audit.meta.auditor=found?.full_name || v; audit.meta.auditorType=found?.role || audit.meta.auditorType || 'internal'; }
+    else{ audit.meta.auditor=''; audit.meta.auditorType=''; }
     if(auditorInternal) auditorInternal.checked=audit.meta.auditorType==='internal';
     if(auditorExternal) auditorExternal.checked=audit.meta.auditorType==='external';
   }
 
-  elAuditor.addEventListener('change',()=>{
-    syncAuditorTypeFromSelection();
-    applyAuditorSelection();
-    refreshAll();
-  });
-
-  elAuditorOther.addEventListener('input',()=>{
-    applyAuditorSelection();
-    refreshAll();
-  });
-
+  elAuditor.addEventListener('change',()=>{ syncAuditorTypeFromSelection(); applyAuditorSelection(); refreshAll(); });
+  elAuditorOther.addEventListener('input',()=>{ applyAuditorSelection(); refreshAll(); });
   [auditorInternal,auditorExternal].forEach(r=>{
     r?.addEventListener('change',()=>{
-      if(elAuditor.value==='__other__'){
-        audit.meta.auditorType=r.value;
-        auditorInternal.checked=r.value==='internal';
-        auditorExternal.checked=r.value==='external';
-        refreshAll();
-      }
+      if(elAuditor.value==='__other__'){ audit.meta.auditorType=r.value; auditorInternal.checked=r.value==='internal'; auditorExternal.checked=r.value==='external'; refreshAll(); }
     });
   });
 
   function applyUserAccess(){
     if(!currentUser) return;
-
-    const roleLabel = currentUser.role === 'external'
-      ? 'External Auditor'
-      : currentUser.role === 'admin'
-        ? 'Administrator'
-        : 'Internal Auditor';
-
+    const roleLabel = currentUser.role === 'external' ? 'External Auditor' : currentUser.role === 'admin' ? 'Administrator' : 'Internal Auditor';
     sessionUser.textContent = `${currentUser.full_name} · ${roleLabel}`;
     const navAdminLink = document.getElementById('navAdminLink');
     if(navAdminLink) navAdminLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
-    elOrg.value = 'Vidullanka PLC';
-    audit.meta.org = 'Vidullanka PLC';
-
-    // A new audit starts with the signed-in user. A loaded audit keeps its
-    // original auditor instead of being overwritten by the current session.
-    if(!audit.meta.auditor){
-      audit.meta.auditor=currentUser.full_name;
-      audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
-    }
-
-    const allowed = (currentUser.role === 'external' || currentUser.role === 'admin')
-      ? SITES
-      : (Array.isArray(currentUser.sites) ? currentUser.sites : []);
-
-    elSite.innerHTML =
-      '<option value="">— select site —</option>' +
-      allowed.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
-
-    if(audit.meta.site && allowed.includes(audit.meta.site)){
-      elSite.value=audit.meta.site;
-    }else if(allowed.length===1 && !audit.meta.site){
-      audit.meta.site=allowed[0];
-      elSite.value=allowed[0];
-    }else{
-      elSite.value='';
-    }
-
-    // Keep the selected auditor/type visible and consistent.
+    elOrg.value = 'Vidullanka PLC'; audit.meta.org = 'Vidullanka PLC';
+    if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
+    const allowed = (currentUser.role === 'external' || currentUser.role === 'admin') ? SITES : (Array.isArray(currentUser.sites) ? currentUser.sites : []);
+    elSite.innerHTML = '<option value="">— select site —</option>' + allowed.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
+    if(audit.meta.site && allowed.includes(audit.meta.site)){ elSite.value=audit.meta.site; }
+    else if(allowed.length===1 && !audit.meta.site){ audit.meta.site=allowed[0]; elSite.value=allowed[0]; }
+    else{ elSite.value=''; }
     if(elAuditor.value!==audit.meta.auditor){
-      if(auditorDirectory.some(a=>a.full_name===audit.meta.auditor)){
-        elAuditor.value=audit.meta.auditor;
-      }else if(audit.meta.auditor){
-        elAuditor.value='__other__';
-        elAuditorOther.style.display='block';
-        elAuditorOther.value=audit.meta.auditor;
-      }
+      if(auditorDirectory.some(a=>a.full_name===audit.meta.auditor)){ elAuditor.value=audit.meta.auditor; }
+      else if(audit.meta.auditor){ elAuditor.value='__other__'; elAuditorOther.style.display='block'; elAuditorOther.value=audit.meta.auditor; }
     }
     syncAuditorTypeFromSelection();
     if(elAuditor.value==='__other__'){
-      auditorInternal.disabled=false;
-      auditorExternal.disabled=false;
-      auditorInternal.checked=audit.meta.auditorType==='internal';
-      auditorExternal.checked=audit.meta.auditorType==='external';
+      auditorInternal.disabled=false; auditorExternal.disabled=false;
+      auditorInternal.checked=audit.meta.auditorType==='internal'; auditorExternal.checked=audit.meta.auditorType==='external';
     }
   }
 
   async function getAuditsForSite(site){
     if(!dbReady) return [];
-    try{
-      const q = site ? `/api/audits?site=${encodeURIComponent(site)}` : '/api/audits';
-      const body = await api(q);
-      return body.audits || [];
-    }catch(e){
-      console.error(e);
-      showStatus('Could not load saved audits: '+e.message,true);
-      return [];
-    }
+    try{ const q = site ? `/api/audits?site=${encodeURIComponent(site)}` : '/api/audits'; const body = await api(q); return body.audits || []; }
+    catch(e){ console.error(e); showStatus('Could not load saved audits: '+e.message,true); return []; }
   }
 
   async function refreshLoadSelect(){
     if(!currentUser) return;
-
-    // IMPORTANT: the saved-audit dropdown is based on the signed-in user's
-    // access scope, NOT on the currently selected audit. This keeps all other
-    // records visible after one record is loaded.
     let list = await getAuditsForSite('');
-
     const isExternalOrAdmin = currentUser.role==='external' || currentUser.role==='admin';
-    if(!isExternalOrAdmin){
-      const allowedSites = new Set(Array.isArray(currentUser.sites)?currentUser.sites:[]);
-      list = list.filter(x=>allowedSites.has(x.site));
-    }
-
-    list.sort((a,b)=>{
-      const byMonth=String(b.audit_month||'').localeCompare(String(a.audit_month||''));
-      if(byMonth!==0) return byMonth;
-      return String(a.site||'').localeCompare(String(b.site||''));
-    });
-
-    const previousValue =
-      elLoadSelect.value ||
-      (audit.meta.site && audit.meta.month ? `${audit.meta.site}|${audit.meta.month}` : '');
-
-    elLoadSelect.innerHTML =
-      '<option value="">— select record —</option>' +
-      list.map(x=>{
-        const month=x.audit_month||'';
-        const type=(x.auditor_type||'').toLowerCase()==='external' ? 'External Auditor' : 'Internal Auditor';
-        const label=`${x.site||''} · ${month} · ${x.auditor||''} · ${type} (${x.overall_total||0}/${GRAND_MAX+Q14_MAX})`;
-        return `<option value="${escHtml((x.site||'')+'|'+month)}">${escHtml(label)}</option>`;
-      }).join('');
-
-    if(previousValue && [...elLoadSelect.options].some(o=>o.value===previousValue)){
-      elLoadSelect.value=previousValue;
-    }
+    if(!isExternalOrAdmin){ const allowedSites = new Set(Array.isArray(currentUser.sites)?currentUser.sites:[]); list = list.filter(x=>allowedSites.has(x.site)); }
+    list.sort((a,b)=>{ const byMonth=String(b.audit_month||'').localeCompare(String(a.audit_month||'')); if(byMonth!==0) return byMonth; return String(a.site||'').localeCompare(String(b.site||'')); });
+    const previousValue = elLoadSelect.value || (audit.meta.site && audit.meta.month ? `${audit.meta.site}|${audit.meta.month}` : '');
+    elLoadSelect.innerHTML = '<option value="">— select record —</option>' + list.map(x=>{
+      const month=x.audit_month||''; const type=(x.auditor_type||'').toLowerCase()==='external' ? 'External Auditor' : 'Internal Auditor';
+      const label=`${x.site||''} · ${month} · ${x.auditor||''} · ${type} (${x.overall_total||0}/${GRAND_MAX+Q14_MAX})`;
+      return `<option value="${escHtml((x.site||'')+'|'+month)}">${escHtml(label)}</option>`;
+    }).join('');
+    if(previousValue && [...elLoadSelect.options].some(o=>o.value===previousValue)){ elLoadSelect.value=previousValue; }
   }
 
   async function loadAudit(compositeValue){
     if(!compositeValue || !currentUser) return;
-
-    const parts=compositeValue.split('|');
-    const site=parts[0], month=parts.slice(1).join('|');
+    const parts=compositeValue.split('|'); const site=parts[0], month=parts.slice(1).join('|');
     if(!site || !month) return;
-
     try{
       const body=await api(`/api/audit?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`);
-      const data=body.audit;
-      const savedType=(data.auditor_type || data.auditorType || data.audit?.meta?.auditorType || '').toLowerCase();
-
+      const data=body.audit; const savedType=(data.auditor_type || data.auditorType || data.audit?.meta?.auditorType || '').toLowerCase();
       audit={
-        meta:{
-          org:'Vidullanka PLC',
-          site:data.site||site,
-          dept:data.department||'',
-          month:data.audit_month||month,
-          auditor:data.auditor || data.audit?.meta?.auditor || '',
-          auditorType:savedType==='external'?'external':savedType==='internal'?'internal':''
-        },
-        scores:data.scores||{},
-        sectionNotes:data.section_notes||{},
-        q14:data.q14||{text:{},score:{}},
-        specialNote:data.special_note||'',
-        signature:data.signature||{dataUrl:'',signedAt:null},
-        savedAt:data.saved_at||data.updated_at||null
+        meta:{ org:'Vidullanka PLC', site:data.site||site, dept:data.department||'', month:data.audit_month||month,
+          auditor:data.auditor || data.audit?.meta?.auditor || '', auditorType:savedType==='external'?'external':savedType==='internal'?'internal':'' },
+        scores:data.scores||{}, sectionNotes:data.section_notes||{}, q14:data.q14||{text:{},score:{}},
+        specialNote:data.special_note||'', signature:data.signature||{dataUrl:'',signedAt:null}, savedAt:data.saved_at||data.updated_at||null
       };
-
-      // Fallback only if the saved record does not contain auditor metadata.
-      if(!audit.meta.auditor){
-        audit.meta.auditor=currentUser.full_name;
-        audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
-      }
-
-      fullRender();
-      applyUserAccess();
-      await refreshAuditorOptions();
-
-      // refreshAuditorOptions can sync the saved auditor/type if it is in the directory.
-      if(audit.meta.auditorType==='external'){
-        auditorExternal.checked=true; auditorInternal.checked=false;
-      }else if(audit.meta.auditorType==='internal'){
-        auditorInternal.checked=true; auditorExternal.checked=false;
-      }
-
+      if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
+      fullRender(); applyUserAccess(); await refreshAuditorOptions();
+      if(audit.meta.auditorType==='external'){ auditorExternal.checked=true; auditorInternal.checked=false; }
+      else if(audit.meta.auditorType==='internal'){ auditorInternal.checked=true; auditorExternal.checked=false; }
       await refreshLoadSelect();
       const selectedValue=`${site}|${month}`;
-      if([...elLoadSelect.options].some(o=>o.value===selectedValue)){
-        elLoadSelect.value=selectedValue;
-      }
-
+      if([...elLoadSelect.options].some(o=>o.value===selectedValue)){ elLoadSelect.value=selectedValue; }
       showStatus(`Loaded audit for ${site} · ${month}. Other accessible records remain available in the dropdown.`);
-    }catch(e){
-      console.error(e);
-      showStatus('Could not load that audit: '+e.message,true);
-    }
+    }catch(e){ console.error(e); showStatus('Could not load that audit: '+e.message,true); }
   }
 
   async function saveAudit(){
@@ -1461,37 +1108,19 @@
     if(!String(audit.specialNote||'').trim()){ showStatus('Please complete the Special Note by the Auditor before saving.',true); document.getElementById('specialNote')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
     if(!audit.signature || !audit.signature.dataUrl){ showStatus('Please provide the auditor e-signature before saving the final audit.',true); document.getElementById('signatureCanvas')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
     const overallTotal = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
-    audit.savedAt = new Date().toISOString();
-    audit.meta.org='Vidullanka PLC';
-    if(!audit.meta.auditor){
-      audit.meta.auditor=currentUser.full_name;
-      audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
-    }
+    audit.savedAt = new Date().toISOString(); audit.meta.org='Vidullanka PLC';
+    if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
     try{
-      const body=await api('/api/audits',{method:'POST',body:JSON.stringify({
-        site:audit.meta.site,
-        audit_month:audit.meta.month,
-        auditor:audit.meta.auditor,
-        auditor_type:audit.meta.auditorType,
-        audit,
-        overall_total:overallTotal
-      })});
-      audit.savedAt=body.audit?.saved_at||audit.savedAt;
-      await refreshLoadSelect();
+      const body=await api('/api/audits',{method:'POST',body:JSON.stringify({ site:audit.meta.site, audit_month:audit.meta.month, auditor:audit.meta.auditor, auditor_type:audit.meta.auditorType, audit, overall_total:overallTotal })});
+      audit.savedAt=body.audit?.saved_at||audit.savedAt; await refreshLoadSelect();
       showStatus(`Saved ${audit.meta.site} · ${audit.meta.month} to Neon PostgreSQL.`);
-    }catch(e){console.error(e);showStatus('Could not save to database: '+e.message,true);}
+    }catch(e){ console.error(e); showStatus('Could not save to database: '+e.message,true); }
   }
 
   async function deleteAudit(){
     const site=audit.meta.site, month=audit.meta.month;
-    if(!site || !month){showStatus('Nothing to delete.',true);return;}
-    if(!confirm(`WARNING: You are about to permanently delete the saved audit for ${site} · ${month}.
-
-Any unsaved information currently entered on the screen will also be lost.
-
-If you have not saved your completed audit, click Cancel and save it first.
-
-Continue with deletion?`))return;
+    if(!site || !month){ showStatus('Nothing to delete.',true); return; }
+    if(!confirm(`WARNING: You are about to permanently delete the saved audit for ${site} · ${month}.\n\nAny unsaved information currently entered on the screen will also be lost.\n\nIf you have not saved your completed audit, click Cancel and save it first.\n\nContinue with deletion?`)) return;
     try{
       await api(`/api/audits?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`,{method:'DELETE'});
       audit=blankAudit(); audit.meta.org='Vidullanka PLC'; audit.meta.site=site; audit.meta.auditor=currentUser?.full_name||'';
@@ -1499,7 +1128,12 @@ Continue with deletion?`))return;
       const now=new Date(); audit.meta.month=now.toISOString().slice(0,7);
       fullRender(); applyUserAccess(); await refreshLoadSelect();
       showStatus(`Deleted audit for ${site} · ${month}.`);
-    }catch(e){console.error(e);showStatus('Could not delete from database: '+e.message,true);}
+    }catch(e){ console.error(e); showStatus('Could not delete from database: '+e.message,true); }
+  }
+
+  function showStatus(msg,isErr){
+    const el = document.getElementById('statusMsg'); if(!el) return;
+    el.textContent = msg; el.style.color = isErr ? 'var(--red)' : 'var(--green-deep)';
   }
 
   async function doLogin(username,password){
@@ -1524,74 +1158,31 @@ Continue with deletion?`))return;
 
   function syncSignupRoleUI(){
     const role=document.querySelector('input[name="signupRole"]:checked')?.value || 'internal';
-    const internal=role==='internal';
-    signupSitesField.style.display=internal?'block':'none';
-    if(!internal){
-      document.querySelectorAll('input[name="signupSite"]').forEach(x=>x.checked=false);
-    }
+    const internal=role==='internal'; signupSitesField.style.display=internal?'block':'none';
+    if(!internal){ document.querySelectorAll('input[name="signupSite"]').forEach(x=>x.checked=false); }
   }
-
   signupBtn.addEventListener('click',()=>{
-    signupModal.style.display='flex';
-    signupMsg.textContent='';
-    signupMsg.style.color='var(--red)';
-    signupForm.reset();
-    document.querySelector('input[name="signupRole"][value="internal"]').checked=true;
-    syncSignupRoleUI();
-    signupFullName.focus();
+    signupModal.style.display='flex'; signupMsg.textContent=''; signupMsg.style.color='var(--red)';
+    signupForm.reset(); document.querySelector('input[name="signupRole"][value="internal"]').checked=true;
+    syncSignupRoleUI(); signupFullName.focus();
   });
-
-  signupCancel.addEventListener('click',()=>{
-    signupModal.style.display='none';
-    signupForm.reset();
-    syncSignupRoleUI();
-  });
-
-  document.querySelectorAll('input[name="signupRole"]').forEach(r=>{
-    r.addEventListener('change',syncSignupRoleUI);
-  });
+  signupCancel.addEventListener('click',()=>{ signupModal.style.display='none'; signupForm.reset(); syncSignupRoleUI(); });
+  document.querySelectorAll('input[name="signupRole"]').forEach(r=>{ r.addEventListener('change',syncSignupRoleUI); });
 
   signupForm.addEventListener('submit',async e=>{
-    e.preventDefault();
-    signupMsg.style.color='var(--red)';
-    signupMsg.textContent='Creating account…';
-
+    e.preventDefault(); signupMsg.style.color='var(--red)'; signupMsg.textContent='Creating account…';
     try{
       const role=document.querySelector('input[name="signupRole"]:checked')?.value || 'internal';
-      const fullName=signupFullName.value.trim();
-      const username=document.getElementById('signupUsername').value.trim();
+      const fullName=signupFullName.value.trim(); const username=document.getElementById('signupUsername').value.trim();
       const password=document.getElementById('signupPassword').value;
       const sites=[...document.querySelectorAll('input[name="signupSite"]:checked')].map(x=>x.value);
-
       if(!fullName || !username || !password) throw new Error('Please complete all required fields.');
-      if(role==='internal' && sites.length===0){
-        throw new Error('Please select at least one assigned site for an Internal Auditor.');
-      }
-
-      const body=await api('/api/signup',{
-        method:'POST',
-        body:JSON.stringify({full_name:fullName,username,password,role,sites})
-      });
-
-      signupMsg.style.color='var(--green-deep)';
-      signupMsg.textContent=`Account created as ${role==='external'?'External':'Internal'} Auditor. You can now sign in.`;
-
-      // Refresh the auditor directory so the new name immediately appears
-      // in the Auditor dropdown after sign-in.
-      if(currentUser){
-        await refreshAuditorOptions();
-      }
-
-      setTimeout(()=>{
-        signupModal.style.display='none';
-        signupForm.reset();
-        syncSignupRoleUI();
-        document.getElementById('loginUsername').value=body.user.username;
-      },900);
-    }catch(err){
-      signupMsg.style.color='var(--red)';
-      signupMsg.textContent=err.message||'Could not create account.';
-    }
+      if(role==='internal' && sites.length===0){ throw new Error('Please select at least one assigned site for an Internal Auditor.'); }
+      const body=await api('/api/signup',{ method:'POST', body:JSON.stringify({full_name:fullName,username,password,role,sites}) });
+      signupMsg.style.color='var(--green-deep)'; signupMsg.textContent=`Account created as ${role==='external'?'External':'Internal'} Auditor. You can now sign in.`;
+      if(currentUser){ await refreshAuditorOptions(); }
+      setTimeout(()=>{ signupModal.style.display='none'; signupForm.reset(); syncSignupRoleUI(); document.getElementById('loginUsername').value=body.user.username; },900);
+    }catch(err){ signupMsg.style.color='var(--red)'; signupMsg.textContent=err.message||'Could not create account.'; }
   });
 
   loginForm.addEventListener('submit',async e=>{
@@ -1604,114 +1195,66 @@ Continue with deletion?`))return;
     currentUser=null; dbReady=false; root.style.display='none'; authScreen.style.display='flex'; loginForm.reset(); document.getElementById('loginUsername').focus();
   });
 
-  // ---------------- Export to Excel ----------------
   function exportToExcel(){
-    if(typeof XLSX === 'undefined'){
-      showStatus('Excel library failed to load — check your connection and retry.', true);
-      return;
-    }
+    if(typeof XLSX === 'undefined'){ showStatus('Excel library failed to load — check your connection and retry.', true); return; }
     const rows = [];
     rows.push(['JASTECA National Awards — "Taiki Akimoto" Japanese Management Excellence Awards']);
-    rows.push(['5S Monthly Audit Sheet — Service & Manufacturing Sectors']);
-    rows.push([]);
-    rows.push(['Organisation', audit.meta.org||'']);
-    rows.push(['Plant Site', audit.meta.site||'']);
-    rows.push(['Department / Sub-area', audit.meta.dept||'']);
-    rows.push(['Audit month', audit.meta.month||'']);
-    rows.push(['Auditor', audit.meta.auditor||'']);
-    rows.push(['Saved at', audit.savedAt||'']);
-    rows.push([]);
+    rows.push(['5S Monthly Audit Sheet — Service & Manufacturing Sectors']); rows.push([]);
+    rows.push(['Organisation', audit.meta.org||'']); rows.push(['Plant Site', audit.meta.site||'']);
+    rows.push(['Department / Sub-area', audit.meta.dept||'']); rows.push(['Audit month', audit.meta.month||'']);
+    rows.push(['Auditor', audit.meta.auditor||'']); rows.push(['Saved at', audit.savedAt||'']); rows.push([]);
     rows.push(['S.No','Description','Rating (1-5)','Rating label']);
-
     SECTIONS.forEach(section=>{
       rows.push([`${section.num}. ${section.title.toUpperCase()}`, section.desc, '', '']);
-      section.items.forEach(([code,label])=>{
-        const key = itemKey(section.id, code);
-        const v = audit.scores[key];
-        rows.push([code, label, v||'', v?RATING_LABELS[v-1]:'']);
-      });
+      section.items.forEach(([code,label])=>{ const key = itemKey(section.id, code); const v = audit.scores[key]; rows.push([code, label, v||'', v?RATING_LABELS[v-1]:'']); });
       rows.push(['', `TOTAL (out of ${section.max})`, sectionTotal(section), '']);
-      if(audit.sectionNotes[section.id]){
-        rows.push(['', 'Notes: '+audit.sectionNotes[section.id], '', '']);
-      }
+      if(audit.sectionNotes[section.id]){ rows.push(['', 'Notes: '+audit.sectionNotes[section.id], '', '']); }
       rows.push([]);
     });
-
     const grand5s = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0);
-    rows.push(['', `GRAND TOTAL — Sections 1-13 (out of ${GRAND_MAX})`, grand5s, '']);
-    rows.push([]);
-
+    rows.push(['', `GRAND TOTAL — Sections 1-13 (out of ${GRAND_MAX})`, grand5s, '']); rows.push([]);
     rows.push(['14. OTHER JAPANESE MANAGEMENT PRACTICES','','Score (0-10)','']);
-    Q14.forEach(q=>{
-      rows.push([q.label, q.text, audit.q14.score[q.id]!==undefined?audit.q14.score[q.id]:'', '']);
-      rows.push(['', 'Response: '+(audit.q14.text[q.id]||''), '', '']);
-    });
-    rows.push(['', `TOTAL (out of ${Q14_MAX})`, q14Total(), '']);
-    rows.push([]);
-
-    rows.push(['', `OVERALL GRAND TOTAL (out of ${GRAND_MAX+Q14_MAX})`, grand5s+q14Total(), '']);
-    rows.push([]);
+    Q14.forEach(q=>{ rows.push([q.label, q.text, audit.q14.score[q.id]!==undefined?audit.q14.score[q.id]:'', '']); rows.push(['', 'Response: '+(audit.q14.text[q.id]||''), '', '']); });
+    rows.push(['', `TOTAL (out of ${Q14_MAX})`, q14Total(), '']); rows.push([]);
+    rows.push(['', `OVERALL GRAND TOTAL (out of ${GRAND_MAX+Q14_MAX})`, grand5s+q14Total(), '']); rows.push([]);
     rows.push(['Auditor E-Signature', audit.signature && audit.signature.dataUrl ? 'Captured' : 'Not signed']);
-    rows.push(['Signature timestamp', audit.signature && audit.signature.signedAt ? audit.signature.signedAt : '']);
-    rows.push([]);
+    rows.push(['Signature timestamp', audit.signature && audit.signature.signedAt ? audit.signature.signedAt : '']); rows.push([]);
     rows.push(['Special note by the auditors', audit.specialNote||'']);
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{wch:10},{wch:70},{wch:14},{wch:14}];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Audit Sheet');
-
-    const monthLabel = audit.meta.month || 'draft';
-    const siteLabel = audit.meta.site || 'site';
+    const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = [{wch:10},{wch:70},{wch:14},{wch:14}];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Audit Sheet');
+    const monthLabel = audit.meta.month || 'draft'; const siteLabel = audit.meta.site || 'site';
     const fname = `5S-Audit-${siteLabel}-${monthLabel}${audit.meta.org? '-'+audit.meta.org.replace(/[^a-z0-9]+/gi,'_') : ''}.xlsx`;
-    XLSX.writeFile(wb, fname);
-    showStatus('Downloaded '+fname);
+    XLSX.writeFile(wb, fname); showStatus('Downloaded '+fname);
   }
 
-  // ---------------- Export to Word ----------------
-  function esc(s){
-    return String(s==null?'':s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function exportToWord(){
-    const grand5s = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0);
-    const overall = grand5s + q14Total();
-
+    const grand5s = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0); const overall = grand5s + q14Total();
     let body = '';
     body += `<h1 style="font-family:Calibri,sans-serif;font-size:18pt;text-align:center;margin-bottom:2px;">JASTECA National Awards</h1>`;
     body += `<h2 style="font-family:Calibri,sans-serif;font-size:13pt;text-align:center;font-style:italic;margin-top:0;">"Taiki Akimoto" Japanese Management Excellence Awards</h2>`;
     body += `<h3 style="font-family:Calibri,sans-serif;font-size:14pt;text-align:center;text-decoration:underline;">Audit Sheet</h3>`;
     body += `<p style="font-family:Calibri,sans-serif;font-size:11pt;text-align:center;">Service &amp; Manufacturing Sectors (5S, KPIs, and Japanese Management Implementations)</p>`;
-
     body += `<table style="border-collapse:collapse;width:100%;font-family:Calibri,sans-serif;font-size:10.5pt;margin-top:10px;" cellpadding="4">`;
     const metaRow = (k,v)=>`<tr><td style="border:1px solid #999;width:22%;background:#F2F4EF;"><b>${esc(k)}</b></td><td style="border:1px solid #999;">${esc(v)}</td></tr>`;
-    body += metaRow('Organisation', audit.meta.org);
-    body += metaRow('Plant Site', audit.meta.site);
-    body += metaRow('Department / Sub-area', audit.meta.dept);
-    body += metaRow('Audit month', audit.meta.month);
-    body += metaRow('Auditor', audit.meta.auditor);
-    body += `</table>`;
-
+    body += metaRow('Organisation', audit.meta.org); body += metaRow('Plant Site', audit.meta.site);
+    body += metaRow('Department / Sub-area', audit.meta.dept); body += metaRow('Audit month', audit.meta.month);
+    body += metaRow('Auditor', audit.meta.auditor); body += `</table>`;
     SECTIONS.forEach(section=>{
       body += `<h4 style="font-family:Calibri,sans-serif;font-size:12pt;margin:16px 0 2px;">${esc(section.num+'. '+section.title.toUpperCase())}</h4>`;
       body += `<p style="font-family:Calibri,sans-serif;font-size:9.5pt;color:#555;margin:0 0 6px;">${esc(section.desc)}</p>`;
       body += `<table style="border-collapse:collapse;width:100%;font-family:Calibri,sans-serif;font-size:10pt;" cellpadding="4">`;
       body += `<tr style="background:#1B2430;color:#fff;"><td style="border:1px solid #999;width:8%;"><b>S.No</b></td><td style="border:1px solid #999;width:62%;"><b>Description</b></td><td style="border:1px solid #999;width:12%;"><b>Rating</b></td><td style="border:1px solid #999;width:18%;"><b>Label</b></td></tr>`;
       section.items.forEach(([code,label])=>{
-        const key = itemKey(section.id, code);
-        const v = audit.scores[key];
+        const key = itemKey(section.id, code); const v = audit.scores[key];
         body += `<tr><td style="border:1px solid #999;">${esc(code)}</td><td style="border:1px solid #999;">${esc(label)}</td><td style="border:1px solid #999;text-align:center;">${v||''}</td><td style="border:1px solid #999;">${v?RATING_LABELS[v-1]:''}</td></tr>`;
       });
       body += `<tr><td style="border:1px solid #999;"></td><td style="border:1px solid #999;"><b>TOTAL (out of ${section.max})</b></td><td style="border:1px solid #999;text-align:center;"><b>${sectionTotal(section)}</b></td><td style="border:1px solid #999;"></td></tr>`;
       body += `</table>`;
-      if(audit.sectionNotes[section.id]){
-        body += `<p style="font-family:Calibri,sans-serif;font-size:9.5pt;margin:6px 0 0;"><b>Notes:</b> ${esc(audit.sectionNotes[section.id])}</p>`;
-      }
+      if(audit.sectionNotes[section.id]){ body += `<p style="font-family:Calibri,sans-serif;font-size:9.5pt;margin:6px 0 0;"><b>Notes:</b> ${esc(audit.sectionNotes[section.id])}</p>`; }
     });
-
     body += `<h3 style="font-family:Calibri,sans-serif;font-size:13pt;margin-top:18px;">GRAND TOTAL — Sections 1–13: ${grand5s} / ${GRAND_MAX}</h3>`;
-
     body += `<h4 style="font-family:Calibri,sans-serif;font-size:12pt;margin-top:18px;">14. OTHER JAPANESE MANAGEMENT PRACTICES</h4>`;
     Q14.forEach(q=>{
       const score = audit.q14.score[q.id]!==undefined ? audit.q14.score[q.id] : '';
@@ -1720,38 +1263,24 @@ Continue with deletion?`))return;
       body += `<p style="font-family:Calibri,sans-serif;font-size:9.5pt;color:#555;margin:0;">Score: <b>${score}</b> / 10</p>`;
     });
     body += `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin-top:8px;"><b>Section 14 total: ${q14Total()} / ${Q14_MAX}</b></p>`;
-
     body += `<h2 style="font-family:Calibri,sans-serif;font-size:14pt;margin-top:20px;">OVERALL GRAND TOTAL: ${overall} / ${GRAND_MAX+Q14_MAX}</h2>`;
-
     body += `<h4 style="font-family:Calibri,sans-serif;font-size:11pt;margin-top:18px;">Auditor E-Signature</h4>`;
     if(audit.signature && audit.signature.dataUrl){
       body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;margin:4px 0;"><b>Signed by:</b> ${esc(audit.meta.auditor||'')}</p>`;
       body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;margin:4px 0;"><b>Signed at:</b> ${esc(audit.signature.signedAt ? new Date(audit.signature.signedAt).toLocaleString() : '')}</p>`;
       body += `<p style="margin:6px 0;"><img src="${audit.signature.dataUrl}" alt="Auditor electronic signature" style="width:260px;height:100px;border:1px solid #999;object-fit:contain;"></p>`;
-    } else {
-      body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;color:#B5533C;">Not signed.</p>`;
-    }
-
+    } else { body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;color:#B5533C;">Not signed.</p>`; }
     body += `<h4 style="font-family:Calibri,sans-serif;font-size:11pt;margin-top:18px;">Special Note by the Auditors</h4>`;
     body += `<p style="font-family:Calibri,sans-serif;font-size:10.5pt;border:1px solid #ddd;padding:8px;min-height:40px;">${esc(audit.specialNote||'')}</p>`;
-
     const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset="utf-8"><title>5S Audit Sheet</title>
       <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
       </head><body>${body}</body></html>`;
-
-    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const monthLabel = audit.meta.month || 'draft';
-    const siteLabel = audit.meta.site || 'site';
-    a.href = url;
-    a.download = `5S-Audit-${siteLabel}-${monthLabel}${audit.meta.org? '-'+audit.meta.org.replace(/[^a-z0-9]+/gi,'_') : ''}.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url), 2000);
-    showStatus('Downloaded '+a.download);
+    const blob = new Blob(['\ufeff', html], {type:'application/msword'}); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); const monthLabel = audit.meta.month || 'draft'; const siteLabel = audit.meta.site || 'site';
+    a.href = url; a.download = `5S-Audit-${siteLabel}-${monthLabel}${audit.meta.org? '-'+audit.meta.org.replace(/[^a-z0-9]+/gi,'_') : ''}.doc`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000); showStatus('Downloaded '+a.download);
   }
 
   $('#btnExportWord').addEventListener('click', exportToWord);
@@ -1759,35 +1288,32 @@ Continue with deletion?`))return;
   $('#btnDelete').addEventListener('click', deleteAudit);
   $('#btnNew').addEventListener('click', ()=>{
     if(!confirm('Start a new blank audit? Unsaved changes will be lost.')) return;
-    const keepSite = audit.meta.site;
-    audit = blankAudit();
-    audit.meta.site = keepSite;
-    const now = new Date();
-    audit.meta.month = now.toISOString().slice(0,7);
-    applyUserAccess();
-    fullRender();
-    refreshAuditorOptions().then(refreshLoadSelect);
+    const keepSite = audit.meta.site; audit = blankAudit(); audit.meta.site = keepSite;
+    const now = new Date(); audit.meta.month = now.toISOString().slice(0,7);
+    applyUserAccess(); fullRender(); refreshAuditorOptions().then(refreshLoadSelect);
   });
   elLoadSelect.addEventListener('change', e=> loadAudit(e.target.value));
 
-  // ---------------- Init ----------------
+  // ---------------- Mobile nav toggle ----------------
+  const navToggle = document.getElementById('navToggle');
+  const mainNavEl = document.getElementById('mainNav');
+  if(navToggle && mainNavEl){
+    navToggle.addEventListener('click', ()=>{
+      const open = mainNavEl.classList.toggle('nav-open');
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    mainNavEl.querySelectorAll('a').forEach(a=>{
+      a.addEventListener('click', ()=> mainNavEl.classList.remove('nav-open'));
+    });
+  }
+
   (async function init(){
     const user = await loadCurrentUser();
     if(user){
-      authScreen.style.display='none';
-      root.style.display='block';
-      audit.meta.org='Vidullanka PLC';
-      audit.meta.month=new Date().toISOString().slice(0,7);
-      applyUserAccess();
-      await refreshAuditorOptions();
-      fullRender();
-      applyUserAccess();
-      await refreshAuditorOptions();
-      await refreshLoadSelect();
-    }else{
-      root.style.display='none';
-      authScreen.style.display='flex';
-    }
+      authScreen.style.display='none'; root.style.display='block';
+      audit.meta.org='Vidullanka PLC'; audit.meta.month=new Date().toISOString().slice(0,7);
+      applyUserAccess(); await refreshAuditorOptions(); fullRender(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
+    }else{ root.style.display='none'; authScreen.style.display='flex'; }
   })();
 
 })();
