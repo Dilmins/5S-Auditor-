@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vidullanka PLC – 5S Monthly Audit Sheet</title>
+<title>JASTECA – 5S Monthly Audit Sheet</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&family=Source+Serif+4:wght@500;600;700&display=swap');
 
@@ -393,7 +393,7 @@
   <div class="metabar">
     <div class="field">
       <label for="f-org">Organisation</label>
-      <input id="f-org" class="readonly-field" type="text" value="Vidullanka PLC" readonly />
+      <input id="f-org" class="readonly-field" type="text" value="JASTECA" readonly />
     </div>
     <div class="field">
       <label for="f-site">Plant Site</label>
@@ -705,7 +705,7 @@
 
   function blankAudit(){
     return {
-      meta:{org:'Vidullanka PLC', site:'', dept:'', month:'', auditor:'', auditorType:''},
+      meta:{org:'JASTECA', site:'', dept:'', month:'', auditor:'', auditorType:''},
       scores:{}, sectionNotes:{}, q14:{ text:{}, score:{} },
       specialNote:'', signature:{dataUrl:'', signedAt:null}, savedAt:null
     };
@@ -947,7 +947,7 @@
   }
 
   function bindMeta(){
-    elOrg.value = 'Vidullanka PLC'; audit.meta.org = 'Vidullanka PLC';
+    elOrg.value = 'JASTECA'; audit.meta.org = 'JASTECA';
     elSite.value = audit.meta.site||''; elDept.value = audit.meta.dept||''; elMonth.value = audit.meta.month||'';
     elAuditor.value = audit.meta.auditor || currentUser?.full_name || '';
     if(!audit.meta.auditor) audit.meta.auditor = currentUser?.full_name || '';
@@ -1038,7 +1038,7 @@
     sessionUser.innerHTML = `<span class="chip-label">${escHtml(currentUser.full_name)} · ${escHtml(roleLabel)}</span>`;
     const navAdminLink = document.getElementById('navAdminLink');
     if(navAdminLink) navAdminLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
-    elOrg.value = 'Vidullanka PLC'; audit.meta.org = 'Vidullanka PLC';
+    elOrg.value = 'JASTECA'; audit.meta.org = 'JASTECA';
     if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
     const allowed = (currentUser.role === 'external' || currentUser.role === 'admin') ? SITES : (Array.isArray(currentUser.sites) ? currentUser.sites : []);
     elSite.innerHTML = '<option value="">— select site —</option>' + allowed.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
@@ -1085,7 +1085,7 @@
       const body=await api(`/api/audit?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`);
       const data=body.audit; const savedType=(data.auditor_type || data.auditorType || data.audit?.meta?.auditorType || '').toLowerCase();
       audit={
-        meta:{ org:'Vidullanka PLC', site:data.site||site, dept:data.department||'', month:data.audit_month||month,
+        meta:{ org:'JASTECA', site:data.site||site, dept:data.department||'', month:data.audit_month||month,
           auditor:data.auditor || data.audit?.meta?.auditor || '', auditorType:savedType==='external'?'external':savedType==='internal'?'internal':'' },
         scores:data.scores||{}, sectionNotes:data.section_notes||{}, q14:data.q14||{text:{},score:{}},
         specialNote:data.special_note||'', signature:data.signature||{dataUrl:'',signedAt:null}, savedAt:data.saved_at||data.updated_at||null
@@ -1115,7 +1115,7 @@
     if(!String(audit.specialNote||'').trim()){ showStatus('Please complete the Special Note by the Auditor before saving.',true); document.getElementById('specialNote')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
     if(!audit.signature || !audit.signature.dataUrl){ showStatus('Please provide the auditor e-signature before saving the final audit.',true); document.getElementById('signatureCanvas')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
     const overallTotal = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
-    audit.savedAt = new Date().toISOString(); audit.meta.org='Vidullanka PLC';
+    audit.savedAt = new Date().toISOString(); audit.meta.org='JASTECA';
     if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
     try{
       const body=await api('/api/audits',{method:'POST',body:JSON.stringify({ site:audit.meta.site, audit_month:audit.meta.month, auditor:audit.meta.auditor, auditor_type:audit.meta.auditorType, audit, overall_total:overallTotal })});
@@ -1130,7 +1130,7 @@
     if(!confirm(`WARNING: You are about to permanently delete the saved audit for ${site} · ${month}.\n\nAny unsaved information currently entered on the screen will also be lost.\n\nIf you have not saved your completed audit, click Cancel and save it first.\n\nContinue with deletion?`)) return;
     try{
       await api(`/api/audits?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`,{method:'DELETE'});
-      audit=blankAudit(); audit.meta.org='Vidullanka PLC'; audit.meta.site=site; audit.meta.auditor=currentUser?.full_name||'';
+      audit=blankAudit(); audit.meta.org='JASTECA'; audit.meta.site=site; audit.meta.auditor=currentUser?.full_name||'';
       audit.meta.auditorType=currentUser?.role==='external'?'external':'internal';
       const now=new Date(); audit.meta.month=now.toISOString().slice(0,7);
       fullRender(); applyUserAccess(); await refreshLoadSelect();
@@ -1149,7 +1149,7 @@
     const user=await loadCurrentUser();
     if(!user) throw new Error('Signed in but the user session could not be loaded.');
     authScreen.style.display='none'; root.style.display='block';
-    audit=blankAudit(); audit.meta.org='Vidullanka PLC'; audit.meta.month=new Date().toISOString().slice(0,7);
+    audit=blankAudit(); audit.meta.org='JASTECA'; audit.meta.month=new Date().toISOString().slice(0,7);
     applyUserAccess(); await refreshAuditorOptions(); fullRender(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
   }
 
@@ -1318,7 +1318,7 @@
     const user = await loadCurrentUser();
     if(user){
       authScreen.style.display='none'; root.style.display='block';
-      audit.meta.org='Vidullanka PLC'; audit.meta.month=new Date().toISOString().slice(0,7);
+      audit.meta.org='JASTECA'; audit.meta.month=new Date().toISOString().slice(0,7);
       applyUserAccess(); await refreshAuditorOptions(); fullRender(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
     }else{ root.style.display='none'; authScreen.style.display='flex'; }
   })();
