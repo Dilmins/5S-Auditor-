@@ -393,7 +393,7 @@
   <div class="metabar">
     <div class="field">
       <label for="f-org">Organisation</label>
-      <input id="f-org" class="readonly-field" type="text" value="JASTECA" readonly />
+      <select id="f-org" class="readonly-field"><option value="">— loading —</option></select>
     </div>
     <div class="field">
       <label for="f-site">Plant Site</label>
@@ -705,7 +705,7 @@
 
   function blankAudit(){
     return {
-      meta:{org:'JASTECA', site:'', dept:'', month:'', auditor:'', auditorType:''},
+      meta:{org:'', organisationId:null, site:'', dept:'', month:'', auditor:'', auditorType:''},
       scores:{}, sectionNotes:{}, q14:{ text:{}, score:{} },
       specialNote:'', signature:{dataUrl:'', signedAt:null}, savedAt:null
     };
@@ -947,7 +947,6 @@
   }
 
   function bindMeta(){
-    elOrg.value = 'JASTECA'; audit.meta.org = 'JASTECA';
     elSite.value = audit.meta.site||''; elDept.value = audit.meta.dept||''; elMonth.value = audit.meta.month||'';
     elAuditor.value = audit.meta.auditor || currentUser?.full_name || '';
     if(!audit.meta.auditor) audit.meta.auditor = currentUser?.full_name || '';
@@ -955,7 +954,6 @@
     if(auditorInternal) auditorInternal.checked = audit.meta.auditorType === 'internal';
     if(auditorExternal) auditorExternal.checked = audit.meta.auditorType === 'external';
   }
-  elSite.addEventListener('change', async e=>{ audit.meta.site=e.target.value; await refreshLoadSelect(); refreshAll(); });
   elDept.addEventListener('input', e=> audit.meta.dept=e.target.value);
   elMonth.addEventListener('input', e=> audit.meta.month=e.target.value);
 
@@ -972,6 +970,82 @@
     try{ const body = await api('/api/me'); currentUser = body.user; dbReady = true; return currentUser; }
     catch(e){ currentUser = null; dbReady = false; return null; }
   }
+
+  // ---------------- Organisations (multi-tenant) ----------------
+  let orgDirectory = []; // [{id, name}]
+  async function loadOrganisations(){
+    try{ const body = await api('/api/organisations'); orgDirectory = body.organisations || []; }
+    catch(e){ console.error(e); orgDirectory = []; }
+    return orgDirectory;
+  }
+
+  async function loadSitesForOrg(organisationId){
+    if(!organisationId) return [];
+    try{ const body = await api(`/api/org-sites?organisation_id=${encodeURIComponent(organisationId)}`); return body.sites || []; }
+    catch(e){ console.error(e); showStatus('Could not load sites for that organisation: '+e.message, true); return []; }
+  }
+
+  function populateSiteSelect(sites, keepSelection){
+    const prev = keepSelection ? (audit.meta.site || elSite.value) : '';
+    elSite.innerHTML = '<option value="">— select site —</option>' + sites.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
+    if(prev && sites.includes(prev)){ elSite.value = prev; }
+    else{ elSite.value=''; if(audit.meta.site && !sites.includes(audit.meta.site)) audit.meta.site=''; }
+  }
+
+  // Rebuilds the Organisation field for the current user. Internal auditors get
+  // a single-option, disabled select locked to their own org (server-enforced
+  // anyway). External/admin get a live, editable select over every org, and
+  // changing it reloads the Plant Site dropdown from that org's real site list.
+  async function setupOrgField(){
+    if(!currentUser) return;
+    if(currentUser.role === 'internal'){
+      elOrg.classList.add('readonly-field');
+      elOrg.disabled = true;
+      const name = currentUser.organisation || '';
+      elOrg.innerHTML = name ? `<option value="${escHtml(name)}">${escHtml(name)}</option>` : '<option value="">No organisation assigned — contact admin</option>';
+      elOrg.value = name;
+      audit.meta.org = name;
+      audit.meta.organisationId = currentUser.organisation_id || null;
+      // Internal auditors' site choices are their own assigned sites (a subset
+      // of the org's full site list), not the full org site list.
+      const allowed = Array.isArray(currentUser.sites) ? currentUser.sites : [];
+      populateSiteSelect(allowed, true);
+    } else {
+      elOrg.classList.remove('readonly-field');
+      elOrg.disabled = false;
+      if(!orgDirectory.length) await loadOrganisations();
+      elOrg.innerHTML = '<option value="">— select organisation —</option>' + orgDirectory.map(o=>`<option value="${o.id}">${escHtml(o.name)}</option>`).join('');
+      // Restore previous selection if we have one (e.g. after loading a saved audit)
+      if(audit.meta.organisationId && orgDirectory.some(o=>o.id===audit.meta.organisationId)){
+        elOrg.value = String(audit.meta.organisationId);
+      } else {
+        elOrg.value = '';
+        audit.meta.organisationId = null; audit.meta.org = '';
+      }
+      if(audit.meta.organisationId){
+        const sites = await loadSitesForOrg(audit.meta.organisationId);
+        populateSiteSelect(sites, true);
+      } else {
+        elSite.innerHTML = '<option value="">— select organisation first —</option>';
+        elSite.value = '';
+      }
+    }
+  }
+
+  elOrg.addEventListener('change', async e=>{
+    if(currentUser?.role === 'internal') return; // locked
+    const id = e.target.value ? Number(e.target.value) : null;
+    const found = orgDirectory.find(o=>o.id===id);
+    audit.meta.organisationId = id;
+    audit.meta.org = found ? found.name : '';
+    const sites = id ? await loadSitesForOrg(id) : [];
+    populateSiteSelect(sites, false);
+    audit.meta.site = '';
+    await refreshLoadSelect();
+    refreshAll();
+  });
+
+  elSite.addEventListener('change', async e=>{ audit.meta.site=e.target.value; await refreshLoadSelect(); refreshAll(); });
 
   let auditorDirectory = [];
   async function refreshAuditorOptions(){
@@ -1038,13 +1112,7 @@
     sessionUser.innerHTML = `<span class="chip-label">${escHtml(currentUser.full_name)} · ${escHtml(roleLabel)}</span>`;
     const navAdminLink = document.getElementById('navAdminLink');
     if(navAdminLink) navAdminLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
-    elOrg.value = 'JASTECA'; audit.meta.org = 'JASTECA';
     if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
-    const allowed = (currentUser.role === 'external' || currentUser.role === 'admin') ? SITES : (Array.isArray(currentUser.sites) ? currentUser.sites : []);
-    elSite.innerHTML = '<option value="">— select site —</option>' + allowed.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
-    if(audit.meta.site && allowed.includes(audit.meta.site)){ elSite.value=audit.meta.site; }
-    else if(allowed.length===1 && !audit.meta.site){ audit.meta.site=allowed[0]; elSite.value=allowed[0]; }
-    else{ elSite.value=''; }
     if(elAuditor.value!==audit.meta.auditor){
       if(auditorDirectory.some(a=>a.full_name===audit.meta.auditor)){ elAuditor.value=audit.meta.auditor; }
       else if(audit.meta.auditor){ elAuditor.value='__other__'; elAuditorOther.style.display='block'; elAuditorOther.value=audit.meta.auditor; }
@@ -1071,7 +1139,10 @@
     const previousValue = elLoadSelect.value || (audit.meta.site && audit.meta.month ? `${audit.meta.site}|${audit.meta.month}` : '');
     elLoadSelect.innerHTML = '<option value="">— select record —</option>' + list.map(x=>{
       const month=x.audit_month||''; const type=(x.auditor_type||'').toLowerCase()==='external' ? 'External Auditor' : 'Internal Auditor';
-      const label=`${x.site||''} · ${month} · ${x.auditor||''} · ${type} (${x.overall_total||0}/${GRAND_MAX+Q14_MAX})`;
+      // Show the organisation per row so external/admin users (who see audits
+      // across every org, and may share site codes between orgs) can tell them apart.
+      const orgPrefix = isExternalOrAdmin && x.organisation ? `${x.organisation} · ` : '';
+      const label=`${orgPrefix}${x.site||''} · ${month} · ${x.auditor||''} · ${type} (${x.overall_total||0}/${GRAND_MAX+Q14_MAX})`;
       return `<option value="${escHtml((x.site||'')+'|'+month)}">${escHtml(label)}</option>`;
     }).join('');
     if(previousValue && [...elLoadSelect.options].some(o=>o.value===previousValue)){ elLoadSelect.value=previousValue; }
@@ -1085,13 +1156,17 @@
       const body=await api(`/api/audit?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`);
       const data=body.audit; const savedType=(data.auditor_type || data.auditorType || data.audit?.meta?.auditorType || '').toLowerCase();
       audit={
-        meta:{ org:'JASTECA', site:data.site||site, dept:data.department||'', month:data.audit_month||month,
+        meta:{ org:data.organisation || '', organisationId:data.organisation_id || null, site:data.site||site, dept:data.department||'', month:data.audit_month||month,
           auditor:data.auditor || data.audit?.meta?.auditor || '', auditorType:savedType==='external'?'external':savedType==='internal'?'internal':'' },
         scores:data.scores||{}, sectionNotes:data.section_notes||{}, q14:data.q14||{text:{},score:{}},
         specialNote:data.special_note||'', signature:data.signature||{dataUrl:'',signedAt:null}, savedAt:data.saved_at||data.updated_at||null
       };
       if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
-      fullRender(); applyUserAccess(); await refreshAuditorOptions();
+      // For internal auditors the org is always their own, regardless of what was
+      // saved on the record (should always match anyway, since they can only
+      // load their own org's audits — see audit.js).
+      if(currentUser.role === 'internal'){ audit.meta.org = currentUser.organisation || audit.meta.org; audit.meta.organisationId = currentUser.organisation_id || audit.meta.organisationId; }
+      fullRender(); await setupOrgField(); applyUserAccess(); await refreshAuditorOptions();
       if(audit.meta.auditorType==='external'){ auditorExternal.checked=true; auditorInternal.checked=false; }
       else if(audit.meta.auditorType==='internal'){ auditorInternal.checked=true; auditorExternal.checked=false; }
       await refreshLoadSelect();
@@ -1103,6 +1178,7 @@
 
   async function saveAudit(){
     if(!currentUser){ showStatus('Please sign in first.',true); return; }
+    if(currentUser.role !== 'internal' && !audit.meta.organisationId){ showStatus('Please select an organisation before saving.',true); elOrg.focus(); return; }
     if(!audit.meta.site){ showStatus('Please select a plant site before saving.',true); elSite.focus(); return; }
     if(!audit.meta.month){ showStatus('Please choose an audit month before saving.',true); return; }
     applyAuditorSelection();
@@ -1115,10 +1191,14 @@
     if(!String(audit.specialNote||'').trim()){ showStatus('Please complete the Special Note by the Auditor before saving.',true); document.getElementById('specialNote')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
     if(!audit.signature || !audit.signature.dataUrl){ showStatus('Please provide the auditor e-signature before saving the final audit.',true); document.getElementById('signatureCanvas')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
     const overallTotal = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
-    audit.savedAt = new Date().toISOString(); audit.meta.org='JASTECA';
+    audit.savedAt = new Date().toISOString();
+    if(currentUser.role === 'internal'){ audit.meta.org = currentUser.organisation || audit.meta.org; audit.meta.organisationId = currentUser.organisation_id || audit.meta.organisationId; }
     if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
     try{
-      const body=await api('/api/audits',{method:'POST',body:JSON.stringify({ site:audit.meta.site, audit_month:audit.meta.month, auditor:audit.meta.auditor, auditor_type:audit.meta.auditorType, audit, overall_total:overallTotal })});
+      const body=await api('/api/audits',{method:'POST',body:JSON.stringify({
+        site:audit.meta.site, audit_month:audit.meta.month, auditor:audit.meta.auditor, auditor_type:audit.meta.auditorType,
+        organisation_id:audit.meta.organisationId, audit, overall_total:overallTotal
+      })});
       audit.savedAt=body.audit?.saved_at||audit.savedAt; await refreshLoadSelect();
       showStatus(`Saved ${audit.meta.site} · ${audit.meta.month} to Neon PostgreSQL.`);
     }catch(e){ console.error(e); showStatus('Could not save to database: '+e.message,true); }
@@ -1130,10 +1210,11 @@
     if(!confirm(`WARNING: You are about to permanently delete the saved audit for ${site} · ${month}.\n\nAny unsaved information currently entered on the screen will also be lost.\n\nIf you have not saved your completed audit, click Cancel and save it first.\n\nContinue with deletion?`)) return;
     try{
       await api(`/api/audits?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`,{method:'DELETE'});
-      audit=blankAudit(); audit.meta.org='JASTECA'; audit.meta.site=site; audit.meta.auditor=currentUser?.full_name||'';
+      const keepOrgId = audit.meta.organisationId, keepOrg = audit.meta.org;
+      audit=blankAudit(); audit.meta.organisationId=keepOrgId; audit.meta.org=keepOrg; audit.meta.site=site; audit.meta.auditor=currentUser?.full_name||'';
       audit.meta.auditorType=currentUser?.role==='external'?'external':'internal';
       const now=new Date(); audit.meta.month=now.toISOString().slice(0,7);
-      fullRender(); applyUserAccess(); await refreshLoadSelect();
+      fullRender(); await setupOrgField(); applyUserAccess(); await refreshLoadSelect();
       showStatus(`Deleted audit for ${site} · ${month}.`);
     }catch(e){ console.error(e); showStatus('Could not delete from database: '+e.message,true); }
   }
@@ -1149,8 +1230,8 @@
     const user=await loadCurrentUser();
     if(!user) throw new Error('Signed in but the user session could not be loaded.');
     authScreen.style.display='none'; root.style.display='block';
-    audit=blankAudit(); audit.meta.org='JASTECA'; audit.meta.month=new Date().toISOString().slice(0,7);
-    applyUserAccess(); await refreshAuditorOptions(); fullRender(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
+    audit=blankAudit(); audit.meta.month=new Date().toISOString().slice(0,7);
+    await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); fullRender(); await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
   }
 
   const signupModal=document.getElementById('signupModal');
@@ -1161,16 +1242,81 @@
   const signupSites=document.getElementById('signupSites');
   const signupSitesField=document.getElementById('signupSitesField');
   const signupFullName=document.getElementById('signupFullName');
-  signupSites.innerHTML=SITES.map(s=>`<label style="font-size:12px;"><input type="checkbox" name="signupSite" value="${s}"> ${s}</label>`).join('');
+
+  // ---------------- Signup: Organisation field (multi-tenant) ----------------
+  // Inserted right after Auditor type, before the site picker, matching the
+  // deferred spec: combobox of existing orgs + free text for a brand-new one.
+  const signupOrgField = document.createElement('div');
+  signupOrgField.className = 'auth-field';
+  signupOrgField.id = 'signupOrgField';
+  signupOrgField.innerHTML = `<label>Organisation — Internal auditors</label>
+    <input id="signupOrgInput" list="signupOrgList" placeholder="Type or select your organisation" autocomplete="off" />
+    <datalist id="signupOrgList"></datalist>`;
+  signupSitesField.parentNode.insertBefore(signupOrgField, signupSitesField);
+  const signupOrgInput = signupOrgField.querySelector('#signupOrgInput');
+  const signupOrgList = signupOrgField.querySelector('#signupOrgList');
+
+  // New-organisation site entry (shown only when the typed org name doesn't
+  // match an existing one, since /api/org-sites would come back empty for it).
+  const signupNewSitesField = document.createElement('div');
+  signupNewSitesField.className = 'auth-field';
+  signupNewSitesField.id = 'signupNewSitesField';
+  signupNewSitesField.style.display = 'none';
+  signupNewSitesField.innerHTML = `<label>New organisation — starting site codes</label>
+    <input id="signupNewSitesInput" placeholder="e.g. HQ, PLANT1, PLANT2 (comma separated)" autocomplete="off" />`;
+  signupSitesField.parentNode.insertBefore(signupNewSitesField, signupSitesField.nextSibling);
+  const signupNewSitesInput = signupNewSitesField.querySelector('#signupNewSitesInput');
+
+  let signupOrgDirectory = [];
+  async function loadSignupOrgs(){
+    try{ const body = await api('/api/organisations'); signupOrgDirectory = body.organisations || []; }
+    catch(e){ console.error(e); signupOrgDirectory = []; }
+    signupOrgList.innerHTML = signupOrgDirectory.map(o=>`<option value="${escHtml(o.name)}"></option>`).join('');
+  }
+
+  function matchedSignupOrg(){
+    const typed = signupOrgInput.value.trim().toLowerCase();
+    return signupOrgDirectory.find(o=>o.name.toLowerCase()===typed) || null;
+  }
+
+  async function syncSignupSitesForOrg(){
+    const matched = matchedSignupOrg();
+    if(matched){
+      signupNewSitesField.style.display = 'none';
+      try{
+        const body = await api(`/api/org-sites?organisation_id=${matched.id}`);
+        const sites = body.sites || [];
+        signupSites.innerHTML = sites.length
+          ? sites.map(s=>`<label style="font-size:12px;"><input type="checkbox" name="signupSite" value="${escHtml(s)}"> ${escHtml(s)}</label>`).join('')
+          : `<span style="font-size:12px;color:var(--ink-soft);">This organisation has no sites configured yet — contact an admin.</span>`;
+      }catch(e){ console.error(e); signupSites.innerHTML = `<span style="font-size:12px;color:var(--red);">Could not load sites for this organisation.</span>`; }
+    } else if(signupOrgInput.value.trim()){
+      // Brand-new organisation: no site list exists yet, let the auditor free-type it.
+      signupSites.innerHTML = `<span style="font-size:12px;color:var(--ink-soft);">New organisation — enter its starting site codes below.</span>`;
+      signupNewSitesField.style.display = 'block';
+    } else {
+      signupSites.innerHTML = '';
+      signupNewSitesField.style.display = 'none';
+    }
+  }
+  signupOrgInput.addEventListener('input', syncSignupSitesForOrg);
 
   function syncSignupRoleUI(){
     const role=document.querySelector('input[name="signupRole"]:checked')?.value || 'internal';
-    const internal=role==='internal'; signupSitesField.style.display=internal?'block':'none';
-    if(!internal){ document.querySelectorAll('input[name="signupSite"]').forEach(x=>x.checked=false); }
+    const internal=role==='internal';
+    signupOrgField.style.display = internal ? 'block' : 'none';
+    signupSitesField.style.display = internal ? 'block' : 'none';
+    signupNewSitesField.style.display = internal && !matchedSignupOrg() && signupOrgInput.value.trim() ? 'block' : 'none';
+    if(!internal){
+      document.querySelectorAll('input[name="signupSite"]').forEach(x=>x.checked=false);
+      signupOrgInput.value=''; signupNewSitesInput.value=''; signupSites.innerHTML='';
+    }
   }
-  signupBtn.addEventListener('click',()=>{
+  signupBtn.addEventListener('click', async ()=>{
     signupModal.style.display='flex'; signupMsg.textContent=''; signupMsg.style.color='var(--red)';
     signupForm.reset(); document.querySelector('input[name="signupRole"][value="internal"]').checked=true;
+    signupSites.innerHTML=''; signupNewSitesInput.value='';
+    await loadSignupOrgs();
     syncSignupRoleUI(); signupFullName.focus();
   });
   signupCancel.addEventListener('click',()=>{ signupModal.style.display='none'; signupForm.reset(); syncSignupRoleUI(); });
@@ -1182,10 +1328,25 @@
       const role=document.querySelector('input[name="signupRole"]:checked')?.value || 'internal';
       const fullName=signupFullName.value.trim(); const username=document.getElementById('signupUsername').value.trim();
       const password=document.getElementById('signupPassword').value;
-      const sites=[...document.querySelectorAll('input[name="signupSite"]:checked')].map(x=>x.value);
       if(!fullName || !username || !password) throw new Error('Please complete all required fields.');
-      if(role==='internal' && sites.length===0){ throw new Error('Please select at least one assigned site for an Internal Auditor.'); }
-      const body=await api('/api/signup',{ method:'POST', body:JSON.stringify({full_name:fullName,username,password,role,sites}) });
+
+      const payload = { full_name:fullName, username, password, role };
+      if(role==='internal'){
+        const orgName = signupOrgInput.value.trim();
+        if(!orgName) throw new Error('Please enter or select your organisation.');
+        payload.organisation = orgName;
+        const matched = matchedSignupOrg();
+        if(matched){
+          const sites=[...document.querySelectorAll('input[name="signupSite"]:checked')].map(x=>x.value);
+          if(sites.length===0) throw new Error('Please select at least one assigned site for an Internal Auditor.');
+          payload.sites = sites;
+        } else {
+          const sites = signupNewSitesInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+          if(sites.length===0) throw new Error('Please enter at least one starting site code for the new organisation.');
+          payload.sites = sites;
+        }
+      }
+      const body=await api('/api/signup',{ method:'POST', body:JSON.stringify(payload) });
       signupMsg.style.color='var(--green-deep)'; signupMsg.textContent=`Account created as ${role==='external'?'External':'Internal'} Auditor. You can now sign in.`;
       if(currentUser){ await refreshAuditorOptions(); }
       setTimeout(()=>{ signupModal.style.display='none'; signupForm.reset(); syncSignupRoleUI(); document.getElementById('loginUsername').value=body.user.username; },900);
@@ -1293,11 +1454,12 @@
   $('#btnExportWord').addEventListener('click', exportToWord);
   $('#btnExport').addEventListener('click', exportToExcel);
   $('#btnDelete').addEventListener('click', deleteAudit);
-  $('#btnNew').addEventListener('click', ()=>{
+  $('#btnNew').addEventListener('click', async ()=>{
     if(!confirm('Start a new blank audit? Unsaved changes will be lost.')) return;
-    const keepSite = audit.meta.site; audit = blankAudit(); audit.meta.site = keepSite;
+    const keepSite = audit.meta.site, keepOrgId = audit.meta.organisationId, keepOrg = audit.meta.org;
+    audit = blankAudit(); audit.meta.site = keepSite; audit.meta.organisationId = keepOrgId; audit.meta.org = keepOrg;
     const now = new Date(); audit.meta.month = now.toISOString().slice(0,7);
-    applyUserAccess(); fullRender(); refreshAuditorOptions().then(refreshLoadSelect);
+    await setupOrgField(); applyUserAccess(); fullRender(); refreshAuditorOptions().then(refreshLoadSelect);
   });
   elLoadSelect.addEventListener('change', e=> loadAudit(e.target.value));
 
@@ -1318,8 +1480,8 @@
     const user = await loadCurrentUser();
     if(user){
       authScreen.style.display='none'; root.style.display='block';
-      audit.meta.org='JASTECA'; audit.meta.month=new Date().toISOString().slice(0,7);
-      applyUserAccess(); await refreshAuditorOptions(); fullRender(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
+      audit.meta.month=new Date().toISOString().slice(0,7);
+      await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); fullRender(); await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
     }else{ root.style.display='none'; authScreen.style.display='flex'; }
   })();
 
