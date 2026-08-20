@@ -38,7 +38,6 @@ export default async function handler(req, res) {
       }
       if (req.method === 'POST') {
         const user = await requireUser(req, res); if (!user) return;
-        if (!requireAdmin(user, res)) return;
         const b = await readBody(req);
         const organisationId = Number(b.organisation_id);
         const site = String(b.site || '').trim();
