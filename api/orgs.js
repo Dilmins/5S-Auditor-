@@ -43,6 +43,12 @@ export default async function handler(req, res) {
         const site = String(b.site || '').trim();
         if (!organisationId || !site) return json(res, 400, { error: 'organisation_id and site are required.' });
         await sql`INSERT INTO five_s_org_sites(organisation_id, site) VALUES(${organisationId}, ${site}) ON CONFLICT DO NOTHING`;
+        // Internal auditors are gated by their own five_s_user_sites list (see
+        // canAccessSite), which is separate from the org's site list — so
+        // self-assign the site they just added or they couldn't use it.
+        if (user.role === 'internal' && Number(user.organisation_id) === organisationId) {
+          await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${user.id}, ${site}) ON CONFLICT DO NOTHING`;
+        }
         return json(res, 201, { ok: true });
       }
       if (req.method === 'DELETE') {
