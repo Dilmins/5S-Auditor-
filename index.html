@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vidullanka PLC – 5S Monthly Audit Sheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&family=Source+Serif+4:wght@500;600;700&display=swap');
+
+  :root{
+    --ink:#1B2430;
+    --ink-soft:#4B5563;
+    --paper:#F2F4EF;
+    --panel:#FFFFFF;
+    --line:#DDE2D9;
+    --green:#2F7A52;
+    --green-deep:#1F5A3B;
+    --amber:#C99A3E;
+    --red:#B5533C;
+    --r-poor:#B5533C;
+    --r-fair:#C77B3E;
+    --r-good:#C99A3E;
+    --r-vgood:#7FA23E;
+    --r-excellent:#2F7A52;
+  }
+  *{box-sizing:border-box;}
+  #jasteca-root{
+    font-family:'IBM Plex Sans',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding:0;
+    line-height:1.4;
+  }
+  #jasteca-root .serif{font-family:'Source Serif 4',serif;}
+  #jasteca-root .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- Masthead ---------- */
+  .mast{
+    background:var(--ink);
+    color:#fff;
+    padding:22px 28px 20px;
+    border-bottom:4px solid var(--green);
+    position:relative;
+    overflow:hidden;
+  }
+  .mast::after{
+    content:'';
+    position:absolute; right:-40px; top:-40px;
+    width:180px;height:180px;border-radius:50%;
+    background:radial-gradient(circle at center, rgba(47,122,82,0.35), transparent 70%);
+  }
+  .mast-eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:#9FCBB2; margin:0 0 4px;
+  }
+  .mast h1{
+    font-family:'Source Serif 4',serif;
+    font-size:26px; margin:0 0 2px; font-weight:700;
+  }
+  .mast p.sub{margin:0; color:#C8CDD6; font-size:13.5px;}
+  .mast-brand{
+    display:flex; align-items:center; gap:9px;
+    position:absolute; right:28px; bottom:16px;
+    z-index:1;
+  }
+  .mast-brand svg{flex-shrink:0;}
+  .brand-chip{
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:#F4F5F1; border-radius:6px; padding:4px 7px;
+    width:26px; height:26px;
+  }
+  .brand-chip img{width:100%; height:100%; object-fit:contain;}
+  .mast-brand span{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:#9FCBB2; font-weight:600;
+  }
+
+  /* ---------- Nav bar ---------- */
+  .navbar{
+    display:flex; gap:6px; align-items:center;
+    background:#1b2430; padding:8px 28px;
+  }
+  .navbar a{
+    color:#C8CDD6; text-decoration:none; font-size:13px; font-weight:600;
+    padding:7px 14px; border-radius:6px;
+  }
+  .navbar a.active{ background:#2f7a52; color:#fff; }
+  .navbar a:hover:not(.active){ background:#2a3442; }
+  @media (max-width:600px){
+    .navbar{ padding:8px 14px; flex-wrap:wrap; }
+    .navbar a{ flex:1 1 auto; text-align:center; }
+  }
+
+  /* ---------- Meta bar ---------- */
+  .metabar{
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    padding:16px 28px;
+    display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;
+  }
+  .field{display:flex; flex-direction:column; gap:4px; min-width:150px; flex:1;}
+  .field label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); font-weight:600;}
+  .field input, .field select, .field textarea{
+    font-family:inherit; font-size:14px; padding:8px 10px;
+    border:1px solid var(--line); border-radius:6px; background:#fdfdfb; color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--green); outline-offset:1px; border-color:var(--green);}
+
+  .btnrow{display:flex; gap:8px; flex-wrap:wrap;}
+  button{
+    font-family:inherit; cursor:pointer; border:none; border-radius:6px;
+    padding:9px 14px; font-size:13.5px; font-weight:600; transition:transform .08s ease, opacity .15s ease;
+  }
+  button:active{transform:scale(0.97);}
+  .btn-primary{background:var(--green); color:#fff;}
+  .btn-primary:hover{background:var(--green-deep);}
+  .btn-ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn-ghost:hover{background:#EAEDE6;}
+  .btn-danger{background:transparent; color:var(--red); border:1px solid #E4C9C0;}
+  .btn-danger:hover{background:#FBEEEA;}
+  .btn-sm{padding:5px 10px; font-size:12px;}
+
+  select#loadSelect{max-width:220px;}
+
+  /* ---------- Layout: gauge + sections ---------- */
+  .layout{display:flex; gap:22px; padding:22px 28px 60px; align-items:flex-start; flex-wrap:wrap;}
+  .gaugecol{
+    width:230px; flex-shrink:0; position:sticky; top:16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px;
+  }
+  .gauge-wrap{display:flex; flex-direction:column; align-items:center;}
+  .gauge-score{font-family:'Source Serif 4',serif; font-size:34px; font-weight:700; margin-top:-58px;}
+  .gauge-max{font-size:12px; color:var(--ink-soft); margin-top:-4px;}
+  .gauge-band{font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-weight:700; margin-top:6px; padding:3px 10px; border-radius:20px;}
+  .breakdown{margin-top:18px; display:flex; flex-direction:column; gap:7px;}
+  .breakdown .brow{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft);}
+  .breakdown .brow b{color:var(--ink); font-weight:600;}
+  .breakdown .bartrack{height:5px; background:#EDEFE9; border-radius:3px; margin-top:2px; overflow:hidden;}
+  .breakdown .barfill{height:100%; background:var(--green); border-radius:3px;}
+
+  .maincol{flex:1; min-width:340px; display:flex; flex-direction:column; gap:14px;}
+
+  /* ---------- Section cards ---------- */
+  .section{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  }
+  .section-head{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:14px 18px; cursor:pointer; user-select:none;
+    border-left:5px solid var(--green);
+  }
+  .section-head:hover{background:#F8F9F5;}
+  .section-head .snum{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--green-deep);
+    background:#E4EFE7; padding:2px 8px; border-radius:5px; margin-right:8px;
+  }
+  .section-head h3{font-family:'Source Serif 4',serif; font-size:16.5px; margin:0; display:inline;}
+  .section-head .sdesc{font-size:12px; color:var(--ink-soft); margin:3px 0 0; font-weight:400;}
+  .section-head .stotal{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; white-space:nowrap;}
+  .section-head .chev{transition:transform .18s ease; color:var(--ink-soft); flex-shrink:0;}
+  .section.open .chev{transform:rotate(180deg);}
+
+  .section-body{
+    max-height:0; overflow:hidden; transition:max-height .25s ease;
+    border-top:1px solid transparent;
+  }
+  .section.open .section-body{border-top:1px solid var(--line);}
+  .section-body-inner{padding:6px 18px 16px;}
+
+  .item{
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    padding:11px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap;
+  }
+  .item:last-child{border-bottom:none;}
+  .item-label{flex:1; min-width:220px; font-size:13.5px;}\n  .item-label .si-text,.q14-item .si-text{display:block;margin-top:4px;font-family:'Noto Sans Sinhala',sans-serif;font-size:13px;line-height:1.55;color:#56606D;}\n  .item-label .si-text{padding-left:0;}\n  .q14-item .si-text{margin:4px 0 9px;}
+  .item-label .inum{color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:11.5px; margin-right:6px;}
+
+  .pills{display:flex; gap:5px; flex-shrink:0;}
+  .pill{
+    width:34px; height:34px; border-radius:50%; border:1.5px solid var(--line);
+    background:#fff; color:var(--ink-soft); font-size:13px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:all .12s ease;
+  }
+  .pill:hover{border-color:var(--green);}
+  .pill.selected{color:#fff; border-color:transparent;}
+  .pill[data-v="1"].selected{background:var(--r-poor);}
+  .pill[data-v="2"].selected{background:var(--r-fair);}
+  .pill[data-v="3"].selected{background:var(--r-good);}
+  .pill[data-v="4"].selected{background:var(--r-vgood);}
+  .pill[data-v="5"].selected{background:var(--r-excellent);}
+
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--ink-soft); padding:2px 18px 14px;}
+  .legend span{display:flex; align-items:center; gap:5px;}
+  .legend i{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  .notes-toggle{font-size:12px; color:var(--green-deep); cursor:pointer; margin-top:8px; display:inline-block; font-weight:600;}
+  .notes-area{display:none; margin-top:8px;}
+  .notes-area.show{display:block;}
+  .notes-area textarea{width:100%; min-height:60px; font-family:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; resize:vertical;}
+
+  /* Section 14 */
+  .q14{padding:14px 18px;}
+  .q14-item{padding:14px 0; border-bottom:1px dashed var(--line);}
+  .q14-item:last-child{border-bottom:none;}
+  .q14-item .qhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .q14-item .qnum{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--green-deep); font-weight:700;}
+  .q14-item p.qtext{font-size:13.5px; margin:4px 0 8px;}
+  .q14-item textarea{width:100%; min-height:80px; font-family:inherit; font-size:13.5px; padding:9px 10px; border:1px solid var(--line); border-radius:6px; resize:vertical;}
+  .q14-foot{display:flex; justify-content:space-between; align-items:center; margin-top:6px; flex-wrap:wrap; gap:8px;}
+  .wordcount{font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;}
+  .wordcount.over{color:var(--red); font-weight:700;}
+  .scoreinput{display:flex; align-items:center; gap:6px;}
+  .scoreinput label{font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .scoreinput input{width:56px; padding:5px 6px; border:1px solid var(--line); border-radius:5px; font-family:'IBM Plex Mono',monospace; text-align:center;}
+
+  .grandcard{
+    background:var(--ink); color:#fff; border-radius:10px; padding:20px 22px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;
+  }
+  .grandcard .gt-label{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#9FCBB2;}
+  .grandcard .gt-score{font-family:'Source Serif 4',serif; font-size:30px; font-weight:700;}
+  .savebox{padding:8px 18px; background:transparent;}
+  .status-msg{font-size:12px; color:var(--green-deep); font-weight:600; min-height:16px; padding:0 18px;}
+
+  .signature-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-top:14px;}
+  .signature-card h3{font-family:'Source Serif 4',serif;margin:0 0 4px;font-size:17px;}
+  .signature-card .sig-help{font-size:12px;color:var(--ink-soft);margin:0 0 12px;}
+  .signature-summary{display:flex;gap:18px;flex-wrap:wrap;align-items:center;background:#F7F8F5;border:1px solid var(--line);border-radius:7px;padding:10px 12px;margin-bottom:12px;}
+  .signature-summary b{color:var(--ink);}
+  .signature-pad-wrap{background:#fff;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+  #signatureCanvas{display:block;width:100%;height:180px;background:#fff;cursor:crosshair;touch-action:none;}
+  .signature-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;}
+  .signature-status{font-size:12px;color:var(--ink-soft);}
+  .signature-status.signed{color:var(--green-deep);font-weight:600;}
+
+  .savedlist{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px;}
+  .savedlist h4{font-family:'Source Serif 4',serif; margin:0 0 8px; font-size:14.5px;}
+  .savedrow{display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--line); font-size:13px; gap:10px; flex-wrap:wrap;}
+  .savedrow:last-child{border-bottom:none;}
+  .savedrow .meta{color:var(--ink-soft); font-size:11.5px;}
+
+  @media (max-width: 640px){
+  .mast{padding:16px 16px 60px;}
+  .mast-brand{position:static; margin-top:12px; justify-content:flex-start;}
+  .sessionbar{position:static; margin-top:10px; justify-content:flex-start; flex-wrap:wrap;}
+  .metabar{padding:14px 16px; gap:12px;}
+  .metabar .field{min-width:100%; flex:1 1 100%;}
+  .metabar .btnrow{width:100%;}
+  .metabar .btnrow button{flex:1 1 auto;}
+  select#loadSelect{max-width:100%;}
+  .layout{padding:14px 16px 40px;}
+  .pill{width:30px; height:30px; font-size:12px;}
+  .item-label{min-width:100%;}
+}
+
+  /* ---------- Authentication ---------- */
+  #authScreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1B2430,#1F5A3B);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .auth-card{width:min(430px,100%);background:#fff;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:30px;}
+  .auth-card h2{font-family:'Source Serif 4',serif;margin:0 0 5px;font-size:28px;}
+  .auth-card p{margin:0 0 22px;color:var(--ink-soft);font-size:13px;}
+  .auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .auth-field label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700;}
+  .auth-field input{font-family:inherit;font-size:14px;padding:11px 12px;border:1px solid var(--line);border-radius:7px;}
+  .auth-field input:focus{outline:2px solid var(--green);border-color:var(--green);}
+  #loginBtn{width:100%;padding:11px 14px;background:var(--green);color:#fff;}
+  #loginBtn:hover{background:var(--green-deep);}
+  #loginMsg{min-height:20px;margin-top:10px;font-size:12.5px;color:var(--red);}
+  .sessionbar{position:absolute;right:28px;top:18px;z-index:2;display:flex;align-items:center;gap:8px;}
+  .session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;}
+  .logout-btn{background:#fff;color:var(--ink);padding:6px 10px;font-size:11px;}
+  .auditor-type{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fdfdfb;min-height:37px;}
+  .auditor-type label{font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px;}
+  .auditor-type input{accent-color:var(--green);}
+  .readonly-field{background:#eef2ed !important;font-weight:600;}
+  @media (max-width: 640px) {
+  .mast-brand {
+    position: static;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  .sessionbar {
+    position: static;
+    margin-top: 8px;
+    justify-content: flex-end;
+  }
+  .mast { padding-top: 18px !important; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="authScreen">
+  <div class="auth-card">
+    <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#2F7A52;font-weight:700;margin-bottom:6px;">Vidullanka PLC</div>
+    <h2>5S Audit Login</h2>
+    <p>Sign in with your assigned auditor account. Internal auditors can access only their assigned site(s); external auditors can access all sites.</p>
+    <form id="loginForm">
+      <div class="auth-field"><label for="loginUsername">Username</label><input id="loginUsername" autocomplete="username" required></div>
+      <div class="auth-field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+      <button id="loginBtn" type="submit">Sign in</button>
+      <button id="signupBtn" type="button" class="btn-ghost" style="width:100%;margin-top:8px;">Create auditor account / Sign up</button>
+      <div id="loginMsg"></div>
+    </form>
+  </div>
+</div>
+
+<div id="signupModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:20px;">
+  <div class="auth-card" style="max-height:90vh;overflow:auto;">
+    <h2 style="font-size:24px;">Auditor Sign Up</h2>
+    <p>Create your assigned auditor account. The predefined Vidullanka auditor names will use their configured auditor type automatically.</p>
+    <form id="signupForm">
+      <div class="auth-field"><label>Full name</label><input id="signupFullName" required></div>
+      <div class="auth-field"><label>Username</label><input id="signupUsername" autocomplete="username" required></div>
+      <div class="auth-field"><label>Password</label><input id="signupPassword" type="password" autocomplete="new-password" required></div>
+      <div class="auth-field"><label>Auditor type</label>
+        <div class="auditor-type"><label><input type="radio" name="signupRole" value="internal" checked> Internal Auditor</label><label><input type="radio" name="signupRole" value="external"> External Auditor</label></div>
+      </div>
+      <div class="auth-field" id="signupSitesField"><label>Assigned site(s) — Internal auditors</label><div id="signupSites" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div></div>
+      <button id="signupSubmit" class="btn-primary" type="submit" style="width:100%;">Create account</button>
+      <button id="signupCancel" class="btn-ghost" type="button" style="width:100%;margin-top:8px;">Cancel</button>
+      <div id="signupMsg" style="min-height:20px;margin-top:10px;font-size:12.5px;color:var(--red);"></div>
+    </form>
+  </div>
+</div>
+
+<div id="jasteca-root" style="display:none;">
+  <nav class="navbar" id="mainNav">
+    <a href="/" class="active">Audit</a>
+    <a href="/admin.html" id="navAdminLink" style="display:none;">Admin</a>
+  </nav>
+  <div class="mast">
+    <p class="mast-eyebrow">Vidullanka PLC · 5S Online Audit Form</p>
+    <h1>5S Monthly Audit Sheet</h1>
+    <p class="sub">Service &amp; Manufacturing Sectors — 5S, KPIs, and Japanese Management Implementations</p>
+    <div class="mast-brand">
+      <span class="brand-chip"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABgCAYAAACkLtSSAAAR2klEQVR4nOVdfXRV1ZX/7X3OfR/5DiEgiEgLIiCimFZtlT6rLr/F6hiQjqOttdhxdbWrtq4485mZmSlaKgUUq5UWNCoIISWQBHIhATTL0FEAAABJRU5ErkJggg==" alt="Bridgp Dynamics logo" /></span>
+      <span>Bridgp Dynamics</span>
+    </div>
+    <div class="sessionbar">
+      <span class="session-chip" id="sessionUser">Not signed in</span>
+      <button class="logout-btn" id="logoutBtn" type="button">Sign out</button>
+    </div>
+  </div>
+
+  <div class="metabar">
+    <div class="field">
+      <label for="f-org">Organisation</label>
+      <input id="f-org" class="readonly-field" type="text" value="Vidullanka PLC" readonly />
+    </div>
+    <div class="field">
+      <label for="f-site">Plant Site</label>
+      <select id="f-site">
+        <option value="">— select site —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-dept">Department / Sub-area</label>
+      <input id="f-dept" type="text" placeholder="e.g. Powerhouse / Intake / Switchyard" />
+    </div>
+    <div class="field" style="max-width:160px;">
+      <label for="f-month">Audit month</label>
+      <input id="f-month" type="month" />
+    </div>
+    <div class="field">
+      <label for="f-auditor">Auditor</label>
+      <select id="f-auditor"><option value="">— select auditor —</option></select>
+      <input id="f-auditor-other" type="text" placeholder="Enter auditor name" style="display:none;margin-top:6px;" />
+    </div>
+    <div class="field" style="min-width:245px;flex:1.15;">
+      <label>Auditor Type</label>
+      <div class="auditor-type">
+        <label><input type="radio" name="auditorType" id="auditorInternal" value="internal" disabled> Internal Auditor</label>
+        <label><input type="radio" name="auditorType" id="auditorExternal" value="external" disabled> External Auditor</label>
+      </div>
+    </div>
+    <div class="field" style="max-width:180px;">
+      <label for="loadSelect">Load saved audit</label>
+      <select id="loadSelect"><option value="">— select record —</option></select>
+    </div>
+    <div class="btnrow">
+      <button class="btn-ghost" id="btnNew">New</button>
+      <button class="btn-ghost" id="btnExport">Download as Excel</button>
+      <button class="btn-ghost" id="btnExportWord">Download as Word</button>
+      <button class="btn-danger btn-sm" id="btnDelete">Delete</button>
+    </div>
+  </div>
+  <div class="status-msg" id="statusMsg"></div>
+
+  <div class="layout">
+    <div class="gaugecol">
+      <div class="gauge-wrap">
+        <svg id="gaugeSvg" width="200" height="120" viewBox="0 0 200 120"></svg>
+        <div class="gauge-score" id="gaugeScore">0</div>
+        <div class="gauge-max">out of 410</div>
+        <div class="gauge-band" id="gaugeBand">—</div>
+      </div>
+      <div class="breakdown" id="breakdown"></div>
+    </div>
+
+    <div class="maincol" id="sectionsWrap"></div>
+  </div>
+
+  <div style="padding:0 28px 40px;" id="bottomWrap"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  const root = document.getElementById('jasteca-root');
+
+  // ---------------- Plant sites ----------------
+  const SITES = ['BBO','BKN','BTO','EME','GNT','HOF','HRN','LKM','MGT','MVB','ORIC','RDP','UDW','VBL','WMB'];
+
+  // ---------------- Data model ----------------
+  const SECTIONS = [
+    {id:'s1', num:'1', title:"5S Leadership of Top Management", max:25,
+     desc:"Role & commitment of Top Management, sustainability of 5S activity, training programmes, committees, campaigns.",
+     items:[
+      ['1.1','5S Knowledge / Understanding / Awareness of all team members'],
+      ['1.2','Level of involvement, engagement, and commitment of all team members in the 5S journey'],
+      ['1.3','A comprehensive manual developed with 5S requirements'],
+      ['1.4','5S Steering Committee with all team members, including top management & Internal Patrol team, has been formed'],
+      ['1.5','Evidence of 5S training identification and facilitation provided'],
+     ]},
+    {id:'s2', num:'2', title:'Seiri — Sorting', max:30,
+     desc:"Clutter-free environment in premises and offices; evidence of removal of unwanted items should be evident all around.",
+     items:[
+      ['2.1','Outside and inside areas within the premises are free of clutter'],
+      ['2.2','Unwanted items removed from premises'],
+      ['2.3','Tops and insides of all cupboards, shelves, tables, drawers, etc. are free of unwanted items'],
+      ['2.4','Notice boards — current notices with removal instructions'],
+      ['2.5','Rules for disposal with Yellow Tags and Red Tags; separate area for storing'],
+      ['2.6','Prevention of Seiri projects established'],
+     ]},
+    {id:'s3', num:'3', title:'Seiton — Organisation', max:70,
+     desc:"Ability to find whatever is required with the least possible delay; evidence of eliminating waste of time.",
+     items:[
+      ['3.1','Photographic evidence of pre-5S implementation and afterwards'],
+      ['3.2','Directional boards to all facilities from the entrance onwards'],
+      ['3.3','Factory / stores, etc. have grid references marked'],
+      ['3.4','All machines / rooms / toilets have identification labels'],
+      ['3.5',"All equipment / tools / files, etc. arranged according to 'Can See', 'Can Take Out' & 'Can Return' principles"],
+      ['3.6','X-axis, Y-axis alignment is evident'],
+      ['3.7','Visual control methods for defects / rework / files / equipment & to prevent mix-up'],
+      ['3.8','Gangways clearly marked with passageways / entrances & exit lines'],
+      ['3.9','Parking areas specified for vehicles, pallets, trolleys, garbage bins, etc.'],
+      ['3.10','Proper wire management with colour coding'],
+      ['3.11','Switches, breakers, fan and regulators are labeled'],
+      ['3.12','Storage areas are maintained with racks / bins clearly marked'],
+      ['3.13','Retrieval time defined for storage items'],
+      ['3.14','Maintenance methods of Seiton are established'],
+     ]},
+    {id:'s4', num:'4', title:'Seiso — Cleanliness', max:40,
+     desc:"Cleanliness throughout the organisation carried out according to the 5S concept.",
+     items:[
+      ['4.1','Floors, walls, windows, toilets, changing rooms in working order & clean'],
+      ['4.2','Daily self-cleaning (3 min / 5 min)'],
+      ['4.3','Cleaning responsibility maps & schedules displayed'],
+      ['4.4','A waste bin strategy is implemented'],
+      ['4.5','Evidence of daily (regular) cleaning records'],
+      ['4.6','Storage of cleaning tools — brooms / mops / other equipment & detergents'],
+      ['4.7','Machines / equipment / tools / furniture at a high level of cleanliness & maintenance schedules displayed'],
+      ['4.8','General appearance of cleanliness all round'],
+     ]},
+    {id:'s5', num:'5', title:'Seiketsu — Standardisation', max:30,
+     desc:"High level of standardisation in Seiri, Seiton, and Seiso, and evidence such standards are practiced all around.",
+     items:[
+      ['5.1','5S procedures adopted & standardised on checklists and labels'],
+      ['5.2','Corridors / aisles & gangways — 5S procedures adopted & standardised'],
+      ['5.3','Visuals on danger / open & shut directional labels on valves / doors, etc.'],
+      ['5.4','Standardised visuals on oil / lubricant containers & fire extinguishers'],
+      ['5.5','Pipes / cables, etc. colour-coded according to the international standard'],
+      ['5.6','Standardisation of files, records, furniture & equipment'],
+     ]},
+    {id:'s6', num:'6', title:'Shitsuke — Self-Discipline', max:40,
+     desc:"Evidence of a disciplined approach to all 5S activities, showing sustainability in the long term.",
+     items:[
+      ['6.1','Evidence of regular 5S training programs for all categories of employees'],
+      ['6.2','5S knowledge / understanding / awareness of the shop floor team'],
+      ['6.3','Evidence of 5S group activities'],
+      ['6.4','Promotion of Kaizen schemes and records for Kaizen implementation'],
+      ['6.5','Evidence in carrying out internal audits by patrol teams'],
+      ['6.6','Self-discipline amongst the workforce, good & bad point stickers, etc.'],
+      ['6.7',"Evidence of the 5S slogan & poster competition among employees' families"],
+      ['6.8','Evidence of self-discipline overall at the institution'],
+     ]},
+    {id:'s7', num:'7', title:'Productivity / Services', max:25,
+     desc:"How efficiently inputs to outputs are used to produce goods & services with better management techniques.",
+     items:[
+      ['7.1','Evidence of methods & systems adopted to improve productivity per employee'],
+      ['7.2','Evidence of productivity increase (e.g. profit / sales / productivity ratios)'],
+      ['7.3','Space utilisation & space saving through 5S'],
+      ['7.4','Use of innovative methods by which productivity has been increased'],
+      ['7.5','Evidence in the use of the 5S process to increase productivity'],
+     ]},
+    {id:'s8', num:'8', title:'Quality', max:15,
+     desc:"Creating satisfied customers by doing 100% right work and responding speedily every time.",
+     items:[
+      ['8.1','Reduction of rejects & reworks'],
+      ['8.2','Reduction of customer complaints & claims'],
+      ['8.3','Customer satisfaction with quality is measured'],
+     ]},
+    {id:'s9', num:'9', title:'Cost', max:15,
+     desc:"The intrinsic cost of providing products / services to declared standards, right first time, every time.",
+     items:[
+      ['9.1','Evidence of a reduction in the cost of materials'],
+      ['9.2','Evidence of a reduction in the cost of labour'],
+      ['9.3','Evidence of a reduction in the cost of energy'],
+     ]},
+    {id:'s10', num:'10', title:'Health & Safety', max:35,
+     desc:"Overall safety of employees, visitors, and property, displayed through the use of the 5S process.",
+     items:[
+      ['10.1','Evidence of the effect of safety, measured by fewer accidents occurring in the year'],
+      ['10.2','Dedicated team for safety / fire / first aid, etc. given sufficient training'],
+      ['10.3','Adequate fire extinguishers and related equipment available inside and outside the organisation'],
+      ['10.4','Methods adopted in machinery & equipment for safety measures'],
+      ['10.5','Methods adopted to protect employees / visitors on safety measures'],
+      ['10.6','The emergency fire evacuation system is well-established and displayed'],
+      ['10.7','Evidence of safety measures adopted in providing an excellent product / service'],
+     ]},
+    {id:'s11', num:'11', title:'Delivery', max:15,
+     desc:"Evidence of the reduction of delivery time of the product / service through the 5S process.",
+     items:[
+      ['11.1','Evidence of timely delivery of product / services'],
+      ['11.2','Evidence of reduced waiting time'],
+      ['11.3','Effective methods implemented through the 5S method to shorten delivery time'],
+     ]},
+    {id:'s12', num:'12', title:'Morale', max:35,
+     desc:"Evidence across the organisation of improving morale through the implementation of the 5S process.",
+     items:[
+      ['12.1','Level of morale displayed by team members'],
+      ['12.2','Innovative methods adopted to improve the morale of employees'],
+      ['12.3','Number of suggestions given by employees'],
+      ['12.4','Reduce absenteeism'],
+      ['12.5','Reduce employee turnover'],
+      ['12.6','Multi-skill operators / staff'],
+      ['12.7','Employee involvement in CSR activities related to 5S'],
+     ]},
+    {id:'s13', num:'13', title:'Use of Technology', max:35,
+     desc:"Digital tools, automation, analytics, and cybersecurity supporting daily 5S operations.",
+     items:[
+      ['13.1','Use of digital tools for monitoring 5S activities (audit software, tracking tools, 5S computer folders, etc.)'],
+      ['13.2','Implementation of automation to reduce manual processes and errors'],
+      ['13.3','Use of data analytics to identify areas for improvement in 5S activities'],
+      ['13.4','Maintenance and management of IT equipment (servers, computers, etc.) to support daily operations'],
+      ['13.5','Use of mobile apps or tablets for real-time data entry and audit reporting'],
+      ['13.6','Cybersecurity measures are in place to protect data related to MIS'],
+      ['13.7','Training programs on technology use for employees to support 5S initiatives'],
+     ]},
+  ];
+
+  const Q14 = [
+    {id:'q1', label:'14.1', text:"Describe how your organisation has implemented Lean Management principles to improve Productivity, Quality, Cost, Delivery, Safety, and Morale (PQCDSM). Please provide measurable improvements and examples."},
+    {id:'q2', label:'14.2', text:"Describe how technology, innovation, and data-driven practices have been integrated into your Lean Management journey to improve operational efficiency, safety, communication, and sustainability."},
+    {id:'q3', label:'14.3', text:"Describe the systems, methods, and visual management practices adopted to identify waste, improve workflow efficiency, reduce errors, and standardize operations. Include examples of successful improvements."},
+    {id:'q4', label:'14.4', text:"Explain how your organisation uses continuous improvement practices such as Kaizen, problem-solving, workplace observation (Gemba), and employee suggestion systems to enhance performance and customer satisfaction."},
+    {id:'q5', label:'14.5', text:"i) Explain the role and commitment of your highest ranking Executive in Top Management initiatives. ii) Why is your highest ranking Executive the most suitable person to lead the JASTECA National Awards application?"},
+  ];
+
+  // Sinhala translations for the checklist questions.
+  // The translations for 1.1–13.3 follow the supplied JASTECA 2026
+  // trilingual audit document; the remaining expanded checklist items are
+  // translated to match the English wording used in this online form.
+  const SINHALA = {
+    '1.1':'සියලුම කණ්ඩායම් සාමාජිකයින්ගේ 5S දැනුම / අවබෝධය / දැනුවත්භාවය',
+    '1.2':'5S ගමනේ සියලුම කණ්ඩායම් සාමාජිකයින්ගේ සහභාගීත්වය, කැපවීම සහ සම්බන්ධතාවය',
+    '1.3':'5S අවශ්‍යතා සමඟ සම්පූර්ණ අත්පොතක් සකස් කර තිබීම',
+    '1.4':'ඉහළ කළමනාකරණය සහ අභ්‍යන්තර පරීක්ෂණ කණ්ඩායම ඇතුළුව සියලුම කණ්ඩායම් සාමාජිකයින්ගෙන් සමන්විත 5S මාර්ගෝපදේශ කමිටුව පිහිටුවා තිබීම',
+    '1.5':'5S පුහුණුව හඳුනාගැනීම සහ පහසුකම් සැපයීම පිළිබඳ සාක්ෂි',
+    '2.1':'පරිශ්‍රයේ ඇතුළත සහ පිටත ප්‍රදේශ අවුල් රහිත වීම',
+    '2.2':'අනවශ්‍ය භාණ්ඩ පරිශ්‍රයෙන්, කාර්යාලවලින් සහ සේවා ස්ථානවලින් ඉවත් කර තිබීම',
+    '2.3':'අල්මාරි, රාක්ක, මේස සහ ලාච්චු අනවශ්‍ය ද්‍රව්‍යවලින් තොර වීම',
+    '2.4':'දැන්වීම් පුවරු – යාවත්කාලීන නිවේදන සහ ඉවත් කිරීමේ උපදෙස්',
+    '2.5':'කහ සහ රතු ටැග් භාවිතයෙන් ඉවත් කිරීමේ නීති',
+    '2.6':'සෙයිරි ව්‍යාපෘති ස්ථාපිත කර තිබීම',
+    '3.1':'5S ක්‍රියාත්මක කිරීමට පෙර සහ පසුව ඡායාරූප සාක්ෂි',
+    '3.2':'ප්‍රවේශ දොරටුවේ සිට සියලු පහසුකම් සඳහා දිශා දර්ශක පුවරු',
+    '3.3':'කර්මාන්තශාලා / ගබඩා සඳහා ග්‍රිඩ් සලකුණු තිබීම',
+    '3.4':'යන්ත්‍ර / කාමර / වැසිකිළි සඳහා හඳුනාගැනීමේ ලේබල් තිබීම',
+    '3.5':'උපකරණ, මෙවලම් සහ ගොනු “බැලිය හැකි, ගත හැකි, ආපසු තැබිය හැකි” මූලධර්ම අනුව සකස් කර තිබීම',
+    '3.6':'X-අක්ෂය සහ Y-අක්ෂය අනුව පෙළගැස්ම පැහැදිලිව දක්නට ලැබීම',
+    '3.7':'දෝෂ / නැවත වැඩ කිරීම / ගොනු / උපකරණ සඳහා දෘශ්‍ය පාලන ක්‍රම සහ මිශ්‍ර වීම වැළැක්වීමේ ක්‍රම තිබීම',
+    '3.8':'ගමන් මාර්ග, ප්‍රවේශ සහ පිටවීමේ රේඛා පැහැදිලිව සලකුණු කර තිබීම',
+    '3.9':'වාහන, පැලට්, ට්‍රොලි, අපද්‍රව්‍ය බඳුන් ආදිය සඳහා වෙන් කළ වාහන නැවැත්වීමේ / තැබීමේ ප්‍රදේශ තිබීම',
+    '3.10':'වර්ණ කේත භාවිතයෙන් නිසි වයර් කළමනාකරණයක් පවත්වාගෙන යාම',
+    '3.11':'ස්විච, බ්‍රේකර්, පංකා සහ රෙගියුලේටර් සඳහා ලේබල් තිබීම',
+    '3.12':'ගබඩා ප්‍රදේශ පැහැදිලිව සලකුණු කළ රාක්ක / බඳුන් සමඟ පවත්වාගෙන යාම',
+    '3.13':'ගබඩා භාණ්ඩ ලබාගැනීමේ කාලය නිර්වචනය කර තිබීම',
+    '3.14':'සෙයිටොන් නඩත්තු කිරීමේ ක්‍රම ස්ථාපිත කර තිබීම',
+    '4.1':'බිම්, බිත්ති, ජනේල සහ වැසිකිළි පිරිසිදුව සහ භාවිතයට සුදුසු වීම',
+    '4.2':'දෛනික ස්වයං පිරිසිදු කිරීමේ ක්‍රියාකාරකම්',
+    '4.3':'පිරිසිදු කිරීමේ වගකීම් සිතියම් සහ කාලසටහන් ප්‍රදර්ශනය කර තිබීම',
+    '4.4':'අපද්‍රව්‍ය බඳුන් ක්‍රමවේදයක් ක්‍රියාත්මක කර තිබීම',
+    '4.5':'දෛනික පිරිසිදු කිරීමේ වාර්තා පිළිබඳ සාක්ෂි',
+    '4.6':'පිරිසිදු කිරීමේ උපකරණ – කොසු / මොප් / අනෙකුත් උපකරණ සහ පිරිසිදුකාරක – නිසි ලෙස ගබඩා කර තිබීම',
+    '4.7':'යන්ත්‍ර / උපකරණ / මෙවලම් / ගෘහ භාණ්ඩ ඉහළ පිරිසිදුකමකින් පවත්වාගෙන යාම සහ නඩත්තු කාලසටහන් ප්‍රදර්ශනය කර තිබීම',
+    '4.8':'සමස්ත පරිශ්‍රයේ පිරිසිදුකම පැහැදිලිව පවත්වාගෙන යාම',
+    '5.1':'5S ක්‍රියා පටිපාටි පරීක්ෂණ ලැයිස්තු සහ ලේබල් මත ප්‍රමිතිකරණය කර තිබීම',
+    '5.2':'මාර්ග, ගමන් මාර්ග සහ ප්‍රධාන ගමන් මාර්ග 5S ක්‍රියා පටිපාටි අනුව ප්‍රමිතිකරණය කර තිබීම',
+    '5.3':'වෑල්ව්, දොරවල් ආදියෙහි අනතුරු / විවෘත හා වසා දැමීමේ දිශා ලේබල් සඳහා දෘශ්‍ය සලකුණු තිබීම',
+    '5.4':'තෙල් / ලිහිසි ද්‍රව්‍ය බඳුන් සහ ගිනි නිවන උපකරණ සඳහා ප්‍රමිතිගත දෘශ්‍ය සලකුණු තිබීම',
+    '5.5':'ජාත්‍යන්තර ප්‍රමිතිය අනුව පයිප්ප / කේබල් ආදිය වර්ණ කේත කර තිබීම',
+    '5.6':'ගොනු, වාර්තා, ගෘහ භාණ්ඩ සහ උපකරණ ප්‍රමිතිකරණය කර තිබීම',
+    '6.1':'සියලුම සේවක කාණ්ඩ සඳහා නිතිපතා 5S පුහුණු වැඩසටහන් පිළිබඳ සාක්ෂි',
+    '6.2':'කර්මාන්තශාලා / වැඩබිම් කණ්ඩායමේ 5S දැනුම / අවබෝධය / දැනුවත්භාවය',
+    '6.3':'5S කණ්ඩායම් ක්‍රියාකාරකම් පිළිබඳ සාක්ෂි',
+    '6.4':'කයිසන් වැඩසටහන් ප්‍රවර්ධනය සහ කයිසන් ක්‍රියාත්මක කිරීමේ වාර්තා',
+    '6.5':'පරීක්ෂණ කණ්ඩායම් මඟින් අභ්‍යන්තර විගණන සිදු කිරීම පිළිබඳ සාක්ෂි',
+    '6.6':'කාර්ය මණ්ඩලය අතර ස්වයං විනය, හොඳ සහ නරක කරුණු ස්ටිකර් ආදිය පවත්වාගෙන යාම',
+    '6.7':'සේවක පවුල් අතර 5S සටන් පාඨ සහ පෝස්ටර් තරඟ පැවැත්වීම පිළිබඳ සාක්ෂි',
+    '6.8':'ආයතනය පුරා සමස්ත ස්වයං විනය පිළිබඳ සාක්ෂි',
+    '7.1':'එක් සේවකයෙකුගේ ඵලදායිතාව වැඩි කිරීමට භාවිත කළ ක්‍රම සහ පද්ධති පිළිබඳ සාක්ෂි',
+    '7.2':'ඵලදායිතාව වැඩිවීම පිළිබඳ සාක්ෂි (උදා: ලාභ / විකුණුම් / ඵලදායිතා අනුපාත)',
+    '7.3':'5S හරහා ඉඩ භාවිතය සහ ඉඩ ඉතිරි කිරීම',
+    '7.4':'ඵලදායිතාව වැඩි කිරීමට භාවිත කළ නව්‍ය ක්‍රම',
+    '7.5':'ඵලදායිතාව වැඩි කිරීම සඳහා 5S ක්‍රියාවලිය භාවිත කළ බවට සාක්ෂි',
+    '8.1':'ප්‍රතික්ෂේපිත නිෂ්පාදන සහ නැවත වැඩ කිරීම අඩු කිරීම',
+    '8.2':'පාරිභෝගික පැමිණිලි සහ ඉල්ලීම් අඩු කිරීම',
+    '8.3':'ගුණාත්මකභාවය පිළිබඳ පාරිභෝගික තෘප්තිය මැනීම',
+    '9.1':'ද්‍රව්‍ය පිරිවැය අඩු කිරීම පිළිබඳ සාක්ෂි',
+    '9.2':'ශ්‍රම පිරිවැය අඩු කිරීම පිළිබඳ සාක්ෂි',
+    '9.3':'බලශක්ති පිරිවැය අඩු කිරීම පිළිබඳ සාක්ෂි',
+    '10.1':'වසර තුළ සිදුවන අනතුරු අඩුවීම මඟින් මනින ලද ආරක්ෂක ක්‍රියාමාර්ගවල ප්‍රතිඵල පිළිබඳ සාක්ෂි',
+    '10.2':'ආරක්ෂාව / ගිනි නිවාරණ / ප්‍රථමාධාර ආදිය සඳහා කැප වූ කණ්ඩායමකට ප්‍රමාණවත් පුහුණුව ලබා දී තිබීම',
+    '10.3':'ආයතනයේ ඇතුළත සහ පිටත ප්‍රමාණවත් ගිනි නිවන උපකරණ සහ අදාළ උපකරණ තිබීම',
+    '10.4':'යන්ත්‍ර සහ උපකරණවල ආරක්ෂක ක්‍රියාමාර්ග සඳහා භාවිත කළ ක්‍රම',
+    '10.5':'සේවකයින් / අමුත්තන් සඳහා ආරක්ෂාව තහවුරු කිරීමට භාවිත කළ ක්‍රම',
+    '10.6':'හදිසි ගිනි ඉවත් කිරීමේ පද්ධතිය හොඳින් ස්ථාපිත කර ප්‍රදර්ශනය කර තිබීම',
+    '10.7':'විශිෂ්ට නිෂ්පාදනයක් / සේවාවක් සැපයීමේදී භාවිත කළ ආරක්ෂක ක්‍රියාමාර්ග පිළිබඳ සාක්ෂි',
+    '11.1':'නිෂ්පාදන / සේවා නිසි වේලාවට ලබාදීම පිළිබඳ සාක්ෂි',
+    '11.2':'රැඳී සිටීමේ කාලය අඩුවීම පිළිබඳ සාක්ෂි',
+    '11.3':'බෙදාහැරීමේ කාලය කෙටි කිරීම සඳහා 5S ක්‍රමය හරහා ඵලදායී ක්‍රම ක්‍රියාත්මක කර තිබීම',
+    '12.1':'කණ්ඩායම් සාමාජිකයින්ගේ මානසික උද්යෝග මට්ටම',
+    '12.2':'සේවක මානසික උද්යෝගය වැඩි කිරීමට භාවිත කළ නව්‍ය ක්‍රම',
+    '12.3':'සේවකයින් විසින් ලබා දී ඇති යෝජනා සංඛ්‍යාව',
+    '12.4':'සේවයට නොපැමිණීම අඩු කිරීම',
+    '12.5':'සේවක පිරිවැටුම / සේවක ඉවත්වීම අඩු කිරීම',
+    '12.6':'බහු කුසලතා සහිත ක්‍රියාකරුවන් / කාර්ය මණ්ඩලය',
+    '12.7':'5S සම්බන්ධ CSR ක්‍රියාකාරකම්වල සේවක සහභාගීත්වය',
+    '13.1':'5S ක්‍රියාකාරකම් නිරීක්ෂණය සඳහා ඩිජිටල් මෙවලම් භාවිතය (විගණන මෘදුකාංග, නිරීක්ෂණ මෙවලම්, 5S පරිගණක ෆෝල්ඩර් ආදිය)',
+    '13.2':'අතින් සිදු කරන ක්‍රියාවලි සහ දෝෂ අඩු කිරීමට ස්වයංක්‍රීයකරණය ක්‍රියාත්මක කිරීම',
+    '13.3':'5S ක්‍රියාකාරකම්වල වැඩිදියුණු කළ යුතු ක්ෂේත්‍ර හඳුනා ගැනීම සඳහා දත්ත විශ්ලේෂණ භාවිතය',
+    '13.4':'දෛනික මෙහෙයුම් සඳහා සහාය වීමට තොරතුරු තාක්ෂණ උපකරණ (සේවාදායක, පරිගණක ආදිය) නඩත්තු කිරීම සහ කළමනාකරණය',
+    '13.5':'තත්‍ය කාලීන දත්ත ඇතුළත් කිරීම සහ විගණන වාර්තාකරණය සඳහා ජංගම යෙදුම් හෝ ටැබ්ලට් භාවිතය',
+    '13.6':'MIS සම්බන්ධ දත්ත ආරක්ෂා කිරීම සඳහා සයිබර් ආරක්ෂණ ක්‍රියාමාර්ග ක්‍රියාත්මක කර තිබීම',
+    '13.7':'5S වැඩසටහන් සඳහා සේවකයින්ගේ තාක්ෂණ භාවිතය වැඩිදියුණු කිරීමට පුහුණු වැඩසටහන්'
+  };
+
+  const Q14_SINHALA = {
+    q1:'ඵලදායිතාව, ගුණාත්මකභාවය, පිරිවැය, බෙදාහැරීම, ආරක්ෂාව සහ මානසික උද්යෝගය (PQCDSM) වැඩිදියුණු කිරීම සඳහා ඔබගේ ආයතනය ලීන් කළමනාකරණ මූලධර්ම ක්‍රියාත්මක කර ඇති ආකාරය විස්තර කරන්න. මැනිය හැකි වැඩිදියුණු කිරීම් සහ උදාහරණ සපයන්න.',
+    q2:'මෙහෙයුම් කාර්යක්ෂමතාව, ආරක්ෂාව, සන්නිවේදනය සහ තිරසාරභාවය වැඩිදියුණු කිරීම සඳහා තාක්ෂණය, නව්‍යකරණය සහ දත්ත මත පදනම් වූ ක්‍රම ඔබගේ ලීන් කළමනාකරණ ගමනට ඒකාබද්ධ කර ඇති ආකාරය විස්තර කරන්න.',
+    q3:'නාස්තිය හඳුනා ගැනීමට, වැඩ ප්‍රවාහයේ කාර්යක්ෂමතාව වැඩි කිරීමට, දෝෂ අඩු කිරීමට සහ මෙහෙයුම් ප්‍රමිතිකරණය කිරීමට භාවිත කරන පද්ධති, ක්‍රම සහ දෘශ්‍ය කළමනාකරණ ක්‍රියාමාර්ග විස්තර කරන්න. සාර්ථක වැඩිදියුණු කිරීම් සඳහා උදාහරණ ඇතුළත් කරන්න.',
+    q4:'කාර්යසාධනය සහ පාරිභෝගික තෘප්තිය වැඩිදියුණු කිරීම සඳහා කයිසන්, ගැටලු විසඳීම, සේවා ස්ථාන නිරීක්ෂණය (Gemba) සහ සේවක යෝජනා පද්ධති වැනි අඛණ්ඩ වැඩිදියුණු කිරීමේ ක්‍රම ඔබගේ ආයතනය භාවිත කරන ආකාරය විස්තර කරන්න.',
+    q5:'i) ඉහළම ශ්‍රේණියේ විධායක නිලධාරියාගේ ඉහළ කළමනාකරණ වැඩසටහන් සඳහා වන භූමිකාව සහ කැපවීම විස්තර කරන්න. ii) JASTECA ජාතික සම්මාන අයදුම්පත මෙහෙයවීමට එම ඉහළම ශ්‍රේණියේ විධායක නිලධාරියා වඩාත් සුදුසු පුද්ගලයා වන්නේ ඇයිදැයි විස්තර කරන්න.'
+  };
+
+  const RATING_LABELS = ['Poor','Fair','Good','Very good','Excellent'];
+  const RATING_COLORS = ['#B5533C','#C77B3E','#C99A3E','#7FA23E','#2F7A52'];
+  const GRAND_MAX = SECTIONS.reduce((a,s)=>a+s.max,0); // 410
+  const Q14_MAX = 50;
+
+  // ---------------- State ----------------
+  function blankAudit(){
+    return {
+      meta:{org:'Vidullanka PLC', site:'', dept:'', month:'', auditor:'', auditorType:''},
+      scores:{},          // itemKey -> 1..5
+      sectionNotes:{},    // sectionId -> text
+      q14:{ text:{}, score:{} }, // qid -> text / score(0-10)
+      specialNote:'',
+      signature:{dataUrl:'', signedAt:null},
+      savedAt:null
+    };
+  }
+  let audit = blankAudit();
+
+  // ---------------- DOM refs ----------------
+  const $ = sel => root.querySelector(sel);
+  const elOrg = $('#f-org'), elSite = $('#f-site'), elDept = $('#f-dept'), elMonth = $('#f-month'), elAuditor = $('#f-auditor'), elAuditorOther = $('#f-auditor-other');
+  const auditorInternal = $('#auditorInternal'), auditorExternal = $('#auditorExternal');
+  const authScreen = document.getElementById('authScreen');
+  const loginForm = document.getElementById('loginForm');
+  const loginMsg = document.getElementById('loginMsg');
+  const sessionUser = document.getElementById('sessionUser');
+  const logoutBtn = document.getElementById('logoutBtn');
+  let currentUser = null;
+  const elLoadSelect = $('#loadSelect');
+  const elStatus = $('#statusMsg');
+  const sectionsWrap = $('#sectionsWrap');
+  const bottomWrap = $('#bottomWrap');
+  const gaugeScore = $('#gaugeScore');
+  const gaugeBand = $('#gaugeBand');
+  const gaugeSvg = $('#gaugeSvg');
+  const breakdownEl = $('#breakdown');
+
+  // populate site dropdown
+  SITES.forEach(s=>{
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    elSite.appendChild(opt);
+  });
+
+  // ---------------- Rendering: sections ----------------
+  function itemKey(sectionId, code){ return sectionId+'_'+code; }
+
+  function sectionTotal(section){
+    let t=0;
+    section.items.forEach(([code])=>{
+      const v = audit.scores[itemKey(section.id, code)];
+      if(v) t+=v;
+    });
+    return t;
+  }
+
+  function renderSections(){
+    sectionsWrap.innerHTML='';
+    SECTIONS.forEach(section=>{
+      const card = document.createElement('div');
+      card.className='section';
+      card.dataset.sec = section.id;
+
+      const head = document.createElement('div');
+      head.className='section-head';
+      head.innerHTML = `
+        <div>
+          <span class="snum">${section.num}</span><h3 class="serif">${section.title}</h3>
+          <p class="sdesc">${section.desc}</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="stotal">${sectionTotal(section)} / ${section.max}</span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>`;
+      head.addEventListener('click', ()=>{
+        card.classList.toggle('open');
+        const body = card.querySelector('.section-body');
+        body.style.maxHeight = card.classList.contains('open') ? body.scrollHeight+400+'px' : '0px';
+      });
+
+      const body = document.createElement('div');
+      body.className='section-body';
+      const inner = document.createElement('div');
+      inner.className='section-body-inner';
+
+      section.items.forEach(([code,label])=>{
+        const key = itemKey(section.id, code);
+        const row = document.createElement('div');
+        row.className='item';
+        const pillsHtml = [1,2,3,4,5].map(v=>{
+          const sel = audit.scores[key]===v ? 'selected':'';
+          return `<div class="pill ${sel}" data-v="${v}" data-key="${key}" title="${RATING_LABELS[v-1]}">${v}</div>`;
+        }).join('');
+        const sinhala = SINHALA[code] || '';
+        row.innerHTML = `<div class="item-label"><span class="inum">${code}</span><span class="en-text">${escHtml(label)}</span>${sinhala ? `<span class="si-text">${escHtml(sinhala)}</span>` : ''}</div><div class="pills">${pillsHtml}</div>`;
+        inner.appendChild(row);
+      });
+
+      // legend
+      const legend = document.createElement('div');
+      legend.className='legend';
+      legend.innerHTML = RATING_LABELS.map((l,i)=>`<span><i style="background:${RATING_COLORS[i]}"></i>${i+1} · ${l}</span>`).join('');
+      inner.appendChild(legend);
+
+      // notes toggle
+      const notesToggle = document.createElement('span');
+      notesToggle.className='notes-toggle';
+      notesToggle.textContent = '+ Add notes / evidence for this section';
+      const notesArea = document.createElement('div');
+      notesArea.className='notes-area';
+      notesArea.innerHTML = `<textarea placeholder="Optional: observations, evidence references, corrective actions...">${audit.sectionNotes[section.id]||''}</textarea>`;
+      notesToggle.addEventListener('click', ()=>{
+        notesArea.classList.toggle('show');
+        notesToggle.textContent = notesArea.classList.contains('show') ? '– Hide notes' : '+ Add notes / evidence for this section';
+      });
+      if(audit.sectionNotes[section.id]) notesArea.classList.add('show');
+      notesArea.querySelector('textarea').addEventListener('input', e=>{
+        audit.sectionNotes[section.id]=e.target.value;
+      });
+      inner.appendChild(notesToggle);
+      inner.appendChild(notesArea);
+
+      body.appendChild(inner);
+      card.appendChild(head);
+      card.appendChild(body);
+      sectionsWrap.appendChild(card);
+    });
+
+    // pill click handling (event delegation)
+    sectionsWrap.onclick = e=>{
+      const pill = e.target.closest('.pill');
+      if(!pill) return;
+      const key = pill.dataset.key;
+      const v = parseInt(pill.dataset.v,10);
+      audit.scores[key] = (audit.scores[key]===v) ? undefined : v; // click again to clear
+      if(audit.scores[key]===undefined) delete audit.scores[key];
+      refreshAll();
+    };
+  }
+
+  function refreshSectionTotals(){
+    SECTIONS.forEach(section=>{
+      const card = sectionsWrap.querySelector(`.section[data-sec="${section.id}"]`);
+      if(!card) return;
+      card.querySelector('.stotal').textContent = `${sectionTotal(section)} / ${section.max}`;
+      card.querySelectorAll('.pill').forEach(p=>{
+        const key = p.dataset.key, v = parseInt(p.dataset.v,10);
+        p.classList.toggle('selected', audit.scores[key]===v);
+      });
+    });
+  }
+
+  // ---------------- Section 14 ----------------
+  function q14Total(){
+    return Q14.reduce((a,q)=> a + (audit.q14.score[q.id]||0), 0);
+  }
+
+  function renderQ14(){
+    const card = document.createElement('div');
+    card.className='section';
+    card.id='q14card';
+    const head = document.createElement('div');
+    head.className='section-head';
+    head.innerHTML = `
+      <div>
+        <span class="snum">14</span><h3 class="serif">Other Japanese Management Practices</h3>
+        <p class="sdesc">Concise written responses (max 100 words each) supported by photographs / records / evidence.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="stotal" id="q14total">${q14Total()} / ${Q14_MAX}</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>`;
+    head.addEventListener('click', ()=>{
+      card.classList.toggle('open');
+      const body = card.querySelector('.section-body');
+      body.style.maxHeight = card.classList.contains('open') ? body.scrollHeight+400+'px' : '0px';
+    });
+
+    const body = document.createElement('div');
+    body.className='section-body';
+    const inner = document.createElement('div');
+    inner.className='q14';
+
+    Q14.forEach(q=>{
+      const wrap = document.createElement('div');
+      wrap.className='q14-item';
+      const savedText = audit.q14.text[q.id]||'';
+      const savedScore = audit.q14.score[q.id]!==undefined ? audit.q14.score[q.id] : '';
+      wrap.innerHTML = `
+        <div class="qhead"><span class="qnum">${q.label}</span></div>
+        <p class="qtext">${escHtml(q.text)}</p>
+        ${Q14_SINHALA[q.id] ? `<div class="si-text">${escHtml(Q14_SINHALA[q.id])}</div>` : ''}
+        <textarea placeholder="Write response here (max ~100 words), reference evidence attached separately...">${escHtml(savedText)}</textarea>
+        <div class="q14-foot">
+          <span class="wordcount">0 words</span>
+          <div class="scoreinput">
+            <label>Score</label>
+            <input type="number" min="0" max="10" step="1" value="${savedScore}" placeholder="0–10" />
+            <span style="font-size:11px;color:var(--ink-soft);">/ 10</span>
+          </div>
+        </div>`;
+      const ta = wrap.querySelector('textarea');
+      const wc = wrap.querySelector('.wordcount');
+      const scoreInput = wrap.querySelector('.scoreinput input');
+
+      function updWc(){
+        const words = ta.value.trim().length ? ta.value.trim().split(/\s+/).length : 0;
+        wc.textContent = words + ' words';
+        wc.classList.toggle('over', words>100);
+      }
+      updWc();
+      ta.addEventListener('input', ()=>{
+        audit.q14.text[q.id]=ta.value;
+        updWc();
+      });
+      scoreInput.addEventListener('input', ()=>{
+        let v = scoreInput.value==='' ? undefined : Math.max(0,Math.min(10, parseInt(scoreInput.value,10)||0));
+        if(v===undefined){ delete audit.q14.score[q.id]; } else { audit.q14.score[q.id]=v; }
+        refreshAll();
+      });
+      inner.appendChild(wrap);
+    });
+
+    body.appendChild(inner);
+    card.appendChild(head);
+    card.appendChild(body);
+    return card;
+  }
+
+  function refreshQ14Total(){
+    const t = document.getElementById('q14total');
+    if(t) t.textContent = `${q14Total()} / ${Q14_MAX}`;
+  }
+
+  // ---------------- Bottom: special note + grand total ----------------
+  function renderBottom(){
+    bottomWrap.innerHTML='';
+    const q14card = renderQ14();
+    bottomWrap.appendChild(q14card);
+
+    const noteCard = document.createElement('div');
+    noteCard.className='section';
+    noteCard.style.marginTop='14px';
+    noteCard.innerHTML = `<div style="padding:16px 18px;">
+      <label style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:600;">Special note by the auditors</label>
+      <textarea id="specialNote" style="width:100%;min-height:70px;margin-top:8px;font-family:inherit;font-size:13.5px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;resize:vertical;">${audit.specialNote||''}</textarea>
+    </div>`;
+    bottomWrap.appendChild(noteCard);
+    noteCard.querySelector('#specialNote').addEventListener('input', e=>{ audit.specialNote = e.target.value; });
+
+    const grand = document.createElement('div');
+    grand.className='grandcard';
+    grand.style.marginTop='14px';
+    grand.innerHTML = `
+      <div>
+        <div class="gt-label">Grand total (5S sections 1–13 + Q14)</div>
+        <div class="gt-score" id="grandScoreLine">0 / ${GRAND_MAX + Q14_MAX}</div>
+      </div>`;
+    bottomWrap.appendChild(grand);
+
+    const currentTotal = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
+    const sigCard = document.createElement('div');
+    sigCard.className = 'signature-card';
+    sigCard.innerHTML = `
+      <h3>Auditor E-Signature</h3>
+      <p class="sig-help">After the marks are finalized, the auditor must sign below. The signature is saved with this audit.</p>
+      <div class="signature-summary">
+        <span><b>Plant Site:</b> <span id="sigSite">${escHtml(audit.meta.site || 'Not selected')}</span></span>
+        <span><b>Final Score:</b> <span id="sigTotal">${currentTotal} / ${GRAND_MAX + Q14_MAX}</span></span>
+        <span><b>Auditor:</b> <span id="sigAuditor">${escHtml(audit.meta.auditor || 'Not entered')}</span></span>
+      </div>
+      <div class="signature-pad-wrap">
+        <canvas id="signatureCanvas" aria-label="Auditor electronic signature area"></canvas>
+      </div>
+      <div class="signature-actions">
+        <button class="btn-ghost btn-sm" id="btnClearSignature" type="button">Clear Signature</button>
+        <span class="signature-status ${audit.signature && audit.signature.dataUrl ? 'signed' : ''}" id="signatureStatus">
+          ${audit.signature && audit.signature.dataUrl
+            ? '✓ Signature captured' + (audit.signature.signedAt ? ' · ' + new Date(audit.signature.signedAt).toLocaleString() : '')
+            : 'Please sign above after confirming the final score.'}
+        </span>
+      </div>
+    `;
+    bottomWrap.appendChild(sigCard);
+
+    const saveCard = document.createElement('div');
+    saveCard.className='section';
+    saveCard.style.marginTop='14px';
+    saveCard.innerHTML = `
+      <div style="padding:16px 18px;">
+        <div style="background:#fff8e8;border:1px solid #e2c36b;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.5;">
+          <b>Important:</b> Do not click <b>Save Audit</b> until all marks, Q14 written responses, the Special Note by the Auditor, and the e-signature have been completed and checked.
+        </div>
+        <button class="btn-primary" id="btnSave" type="button" style="width:100%;">Save Audit</button>
+      </div>`;
+    bottomWrap.appendChild(saveCard);
+    saveCard.querySelector('#btnSave').addEventListener('click', saveAudit);
+    initSignaturePad();
+  }
+
+  // ---------------- Auditor E-Signature ----------------
+  function escHtml(s){
+    return String(s==null?'':s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function initSignaturePad(){
+    const canvas = document.getElementById('signatureCanvas');
+    const clearBtn = document.getElementById('btnClearSignature');
+    if(!canvas || !clearBtn) return;
+
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function setupCanvas(){
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width*dpr));
+      canvas.height = Math.max(1, Math.round(rect.height*dpr));
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#1B2430';
+
+      if(audit.signature && audit.signature.dataUrl){
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img,0,0,rect.width,rect.height);
+        img.src = audit.signature.dataUrl;
+      }
+    }
+
+    function point(e){
+      const r = canvas.getBoundingClientRect();
+      return {x:e.clientX-r.left,y:e.clientY-r.top};
+    }
+
+    function start(e){
+      drawing = true;
+      canvas.setPointerCapture?.(e.pointerId);
+      const p = point(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      e.preventDefault();
+    }
+
+    function move(e){
+      if(!drawing) return;
+      const p = point(e);
+      ctx.lineTo(p.x,p.y);
+      ctx.stroke();
+      e.preventDefault();
+    }
+
+    function end(e){
+      if(!drawing) return;
+      drawing = false;
+      ctx.closePath();
+      audit.signature.dataUrl = canvas.toDataURL('image/png');
+      audit.signature.signedAt = new Date().toISOString();
+
+      const status = document.getElementById('signatureStatus');
+      if(status){
+        status.textContent = '✓ Signature captured · ' + new Date(audit.signature.signedAt).toLocaleString();
+        status.classList.add('signed');
+      }
+      e.preventDefault();
+    }
+
+    canvas.addEventListener('pointerdown',start);
+    canvas.addEventListener('pointermove',move);
+    canvas.addEventListener('pointerup',end);
+    canvas.addEventListener('pointercancel',end);
+    canvas.addEventListener('pointerleave',end);
+
+    clearBtn.addEventListener('click',()=>{
+      ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
+      audit.signature={dataUrl:'',signedAt:null};
+      const status=document.getElementById('signatureStatus');
+      if(status){
+        status.textContent='Please sign above after confirming the final score.';
+        status.classList.remove('signed');
+      }
+    });
+
+    setupCanvas();
+  }
+
+  // ---------------- Gauge ----------------
+  function drawGauge(){
+    const total = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0);
+    const pct = Math.max(0, Math.min(1, total/GRAND_MAX));
+    const cx=100, cy=100, r=80;
+    const startAngle = Math.PI, endAngle = Math.PI + Math.PI*pct;
+    function pt(a){ return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; }
+    const [x1,y1] = pt(Math.PI);
+    const [x2,y2] = pt(Math.PI*2);
+    const [x3,y3] = pt(startAngle+ (Math.PI*pct));
+    const largeArc = pct>0.5 ? 1 : 0;
+
+    let color = '#B5533C';
+    let band = 'Needs attention';
+    if(pct>=0.85){color='#2F7A52'; band='Excellent';}
+    else if(pct>=0.7){color='#7FA23E'; band='Very good';}
+    else if(pct>=0.55){color='#C99A3E'; band='Good';}
+    else if(pct>=0.35){color='#C77B3E'; band='Fair';}
+
+    gaugeSvg.innerHTML = `
+      <path d="M ${x1} ${y1} A ${r} ${r} 0 1 1 ${x2} ${y2}" fill="none" stroke="#EAEDE6" stroke-width="14" stroke-linecap="round"/>
+      ${pct>0 ? `<path d="M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x3} ${y3}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"/>` : ''}
+    `;
+    gaugeScore.textContent = total;
+    gaugeScore.style.color = color;
+    gaugeBand.textContent = band;
+    gaugeBand.style.background = color+'22';
+    gaugeBand.style.color = color;
+  }
+
+  function renderBreakdown(){
+    breakdownEl.innerHTML = SECTIONS.map(s=>{
+      const t = sectionTotal(s);
+      const pct = Math.round((t/s.max)*100);
+      return `<div class="brow"><span>${s.num}. ${s.title}</span><b>${t}/${s.max}</b></div>
+        <div class="bartrack"><div class="barfill" style="width:${pct}%;"></div></div>`;
+    }).join('');
+  }
+
+  function refreshAll(){
+    refreshSectionTotals();
+    refreshQ14Total();
+    drawGauge();
+    renderBreakdown();
+    const line = document.getElementById('grandScoreLine');
+    if(line){
+      const total = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
+      line.textContent = `${total} / ${GRAND_MAX + Q14_MAX}`;
+      const sigTotal=document.getElementById('sigTotal');
+      if(sigTotal) sigTotal.textContent=`${total} / ${GRAND_MAX + Q14_MAX}`;
+      const sigAuditor=document.getElementById('sigAuditor');
+      if(sigAuditor) sigAuditor.textContent=audit.meta.auditor || 'Not entered';
+      const sigSite=document.getElementById('sigSite');
+      if(sigSite) sigSite.textContent=audit.meta.site || 'Not selected';
+    }
+  }
+
+  // ---------------- Meta binding ----------------
+  function bindMeta(){
+    elOrg.value = 'Vidullanka PLC';
+    audit.meta.org = 'Vidullanka PLC';
+    elSite.value = audit.meta.site||'';
+    elDept.value = audit.meta.dept||'';
+    elMonth.value = audit.meta.month||'';
+    elAuditor.value = audit.meta.auditor || currentUser?.full_name || '';
+    if(!audit.meta.auditor) audit.meta.auditor = currentUser?.full_name || '';
+    if(!audit.meta.auditorType){
+      audit.meta.auditorType = currentUser?.role === 'external' ? 'external' : 'internal';
+    }
+    if(auditorInternal) auditorInternal.checked = audit.meta.auditorType === 'internal';
+    if(auditorExternal) auditorExternal.checked = audit.meta.auditorType === 'external';
+  }
+  elSite.addEventListener('change', async e=>{
+    audit.meta.site=e.target.value;
+    await refreshLoadSelect();
+    refreshAll();
+  });
+  elDept.addEventListener('input', e=> audit.meta.dept=e.target.value);
+  elMonth.addEventListener('input', e=> audit.meta.month=e.target.value);
+
+  function fullRender(){
+    bindMeta();
+    renderSections();
+    renderBottom();
+    refreshAll();
+  }
+
+  // ---------------- Neon PostgreSQL API storage ----------------
+  // The browser never receives the Neon connection string. All database access
+  // goes through the same-origin /api endpoints, which use DATABASE_URL on the server.
+  let dbReady = false;
+
+  async function api(path, options={}){
+    const res = await fetch(path, {credentials:'same-origin', ...options, headers:{'Content-Type':'application/json', ...(options.headers||{})}});
+    let body={};
+    try{ body=await res.json(); }catch(_e){}
+    if(!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+    return body;
+  }
+
+  async function loadCurrentUser(){
+    try{
+      const body = await api('/api/me');
+      currentUser = body.user;
+      dbReady = true;
+      return currentUser;
+    }catch(e){
+      currentUser = null;
+      dbReady = false;
+      return null;
+    }
+  }
+
+  let auditorDirectory = [];
+
+  async function refreshAuditorOptions(){
+    if(!currentUser) return;
+    try{
+      const body=await api('/api/auditors');
+      auditorDirectory=(body.auditors||[]).map(a=>({
+        full_name:String(a.full_name||'').trim(),
+        role:(a.role||'internal').toLowerCase()==='external'?'external':'internal',
+        sites:Array.isArray(a.sites)?a.sites:[]
+      })).filter(a=>a.full_name);
+
+      // Always include the signed-in user even if the API directory is temporarily
+      // missing that user.
+      if(!auditorDirectory.some(a=>a.full_name===currentUser.full_name)){
+        auditorDirectory.unshift({
+          full_name:currentUser.full_name,
+          role:currentUser.role==='external'?'external':'internal',
+          sites:currentUser.sites||[]
+        });
+      }
+
+      const options = auditorDirectory.map(a =>
+        `<option value="${escHtml(a.full_name)}">${escHtml(a.full_name)} · ${a.role==='external'?'External Auditor':'Internal Auditor'}</option>`
+      ).join('');
+
+      elAuditor.innerHTML =
+        '<option value="">— select auditor —</option>' +
+        options +
+        '<option value="__other__">Other / Enter name</option>';
+
+      const current=audit.meta.auditor || currentUser.full_name || '';
+      if(auditorDirectory.some(a=>a.full_name===current)){
+        elAuditor.value=current;
+        elAuditorOther.style.display='none';
+        syncAuditorTypeFromSelection();
+      }else if(current){
+        elAuditor.value='__other__';
+        elAuditorOther.style.display='block';
+        elAuditorOther.value=current;
+        if(!audit.meta.auditorType) audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
+        auditorInternal.disabled=false;
+        auditorExternal.disabled=false;
+        auditorInternal.checked=audit.meta.auditorType==='internal';
+        auditorExternal.checked=audit.meta.auditorType==='external';
+      }
+    }catch(e){
+      console.error(e);
+      // Keep the current user usable even if the auditor directory endpoint fails.
+      elAuditor.innerHTML='<option value="">— select auditor —</option>' +
+        `<option value="${escHtml(currentUser.full_name)}">${escHtml(currentUser.full_name)} · ${currentUser.role==='external'?'External Auditor':'Internal Auditor'}</option>` +
+        '<option value="__other__">Other / Enter name</option>';
+      elAuditor.value=audit.meta.auditor||currentUser.full_name;
+      syncAuditorTypeFromSelection();
+    }
+  }
+
+  function syncAuditorTypeFromSelection(){
+    const name=elAuditor.value;
+    const found=auditorDirectory.find(a=>a.full_name===name);
+    if(found){
+      audit.meta.auditor=found.full_name;
+      audit.meta.auditorType=found.role;
+      auditorInternal.checked=found.role==='internal';
+      auditorExternal.checked=found.role==='external';
+      auditorInternal.disabled=true;
+      auditorExternal.disabled=true;
+      elAuditorOther.style.display='none';
+      elAuditorOther.value='';
+    }else if(name==='__other__'){
+      auditorInternal.disabled=false;
+      auditorExternal.disabled=false;
+      const role=audit.meta.auditorType || (currentUser?.role==='external'?'external':'internal');
+      auditorInternal.checked=role==='internal';
+      auditorExternal.checked=role==='external';
+      elAuditorOther.style.display='block';
+    }
+  }
+
+  function applyAuditorSelection(){
+    const v=elAuditor.value;
+    if(v==='__other__'){
+      audit.meta.auditor=elAuditorOther.value.trim();
+      audit.meta.auditorType=auditorExternal.checked?'external':'internal';
+    }else if(v){
+      const found=auditorDirectory.find(a=>a.full_name===v);
+      audit.meta.auditor=found?.full_name || v;
+      audit.meta.auditorType=found?.role || audit.meta.auditorType || 'internal';
+    }else{
+      audit.meta.auditor='';
+      audit.meta.auditorType='';
+    }
+    if(auditorInternal) auditorInternal.checked=audit.meta.auditorType==='internal';
+    if(auditorExternal) auditorExternal.checked=audit.meta.auditorType==='external';
+  }
+
+  elAuditor.addEventListener('change',()=>{
+    syncAuditorTypeFromSelection();
+    applyAuditorSelection();
+    refreshAll();
+  });
+
+  elAuditorOther.addEventListener('input',()=>{
+    applyAuditorSelection();
+    refreshAll();
+  });
+
+  [auditorInternal,auditorExternal].forEach(r=>{
+    r?.addEventListener('change',()=>{
+      if(elAuditor.value==='__other__'){
+        audit.meta.auditorType=r.value;
+        auditorInternal.checked=r.value==='internal';
+        auditorExternal.checked=r.value==='external';
+        refreshAll();
+      }
+    });
+  });
+
+  function applyUserAccess(){
+    if(!currentUser) return;
+
+    const roleLabel = currentUser.role === 'external'
+      ? 'External Auditor'
+      : currentUser.role === 'admin'
+        ? 'Administrator'
+        : 'Internal Auditor';
+
+    sessionUser.textContent = `${currentUser.full_name} · ${roleLabel}`;
+    const navAdminLink = document.getElementById('navAdminLink');
+    if(navAdminLink) navAdminLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+    elOrg.value = 'Vidullanka PLC';
+    audit.meta.org = 'Vidullanka PLC';
+
+    // A new audit starts with the signed-in user. A loaded audit keeps its
+    // original auditor instead of being overwritten by the current session.
+    if(!audit.meta.auditor){
+      audit.meta.auditor=currentUser.full_name;
+      audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
+    }
+
+    const allowed = (currentUser.role === 'external' || currentUser.role === 'admin')
+      ? SITES
+      : (Array.isArray(currentUser.sites) ? currentUser.sites : []);
+
+    elSite.innerHTML =
+      '<option value="">— select site —</option>' +
+      allowed.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('');
+
+    if(audit.meta.site && allowed.includes(audit.meta.site)){
+      elSite.value=audit.meta.site;
+    }else if(allowed.length===1 && !audit.meta.site){
+      audit.meta.site=allowed[0];
+      elSite.value=allowed[0];
+    }else{
+      elSite.value='';
+    }
+
+    // Keep the selected auditor/type visible and consistent.
+    if(elAuditor.value!==audit.meta.auditor){
+      if(auditorDirectory.some(a=>a.full_name===audit.meta.auditor)){
+        elAuditor.value=audit.meta.auditor;
+      }else if(audit.meta.auditor){
+        elAuditor.value='__other__';
+        elAuditorOther.style.display='block';
+        elAuditorOther.value=audit.meta.auditor;
+      }
+    }
+    syncAuditorTypeFromSelection();
+    if(elAuditor.value==='__other__'){
+      auditorInternal.disabled=false;
+      auditorExternal.disabled=false;
+      auditorInternal.checked=audit.meta.auditorType==='internal';
+      auditorExternal.checked=audit.meta.auditorType==='external';
+    }
+  }
+
+  async function getAuditsForSite(site){
+    if(!dbReady) return [];
+    try{
+      const q = site ? `/api/audits?site=${encodeURIComponent(site)}` : '/api/audits';
+      const body = await api(q);
+      return body.audits || [];
+    }catch(e){
+      console.error(e);
+      showStatus('Could not load saved audits: '+e.message,true);
+      return [];
+    }
+  }
+
+  async function refreshLoadSelect(){
+    if(!currentUser) return;
+
+    // IMPORTANT: the saved-audit dropdown is based on the signed-in user's
+    // access scope, NOT on the currently selected audit. This keeps all other
+    // records visible after one record is loaded.
+    let list = await getAuditsForSite('');
+
+    const isExternalOrAdmin = currentUser.role==='external' || currentUser.role==='admin';
+    if(!isExternalOrAdmin){
+      const allowedSites = new Set(Array.isArray(currentUser.sites)?currentUser.sites:[]);
+      list = list.filter(x=>allowedSites.has(x.site));
+    }
+
+    list.sort((a,b)=>{
+      const byMonth=String(b.audit_month||'').localeCompare(String(a.audit_month||''));
+      if(byMonth!==0) return byMonth;
+      return String(a.site||'').localeCompare(String(b.site||''));
+    });
+
+    const previousValue =
+      elLoadSelect.value ||
+      (audit.meta.site && audit.meta.month ? `${audit.meta.site}|${audit.meta.month}` : '');
+
+    elLoadSelect.innerHTML =
+      '<option value="">— select record —</option>' +
+      list.map(x=>{
+        const month=x.audit_month||'';
+        const type=(x.auditor_type||'').toLowerCase()==='external' ? 'External Auditor' : 'Internal Auditor';
+        const label=`${x.site||''} · ${month} · ${x.auditor||''} · ${type} (${x.overall_total||0}/${GRAND_MAX+Q14_MAX})`;
+        return `<option value="${escHtml((x.site||'')+'|'+month)}">${escHtml(label)}</option>`;
+      }).join('');
+
+    if(previousValue && [...elLoadSelect.options].some(o=>o.value===previousValue)){
+      elLoadSelect.value=previousValue;
+    }
+  }
+
+  async function loadAudit(compositeValue){
+    if(!compositeValue || !currentUser) return;
+
+    const parts=compositeValue.split('|');
+    const site=parts[0], month=parts.slice(1).join('|');
+    if(!site || !month) return;
+
+    try{
+      const body=await api(`/api/audit?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`);
+      const data=body.audit;
+      const savedType=(data.auditor_type || data.auditorType || data.audit?.meta?.auditorType || '').toLowerCase();
+
+      audit={
+        meta:{
+          org:'Vidullanka PLC',
+          site:data.site||site,
+          dept:data.department||'',
+          month:data.audit_month||month,
+          auditor:data.auditor || data.audit?.meta?.auditor || '',
+          auditorType:savedType==='external'?'external':savedType==='internal'?'internal':''
+        },
+        scores:data.scores||{},
+        sectionNotes:data.section_notes||{},
+        q14:data.q14||{text:{},score:{}},
+        specialNote:data.special_note||'',
+        signature:data.signature||{dataUrl:'',signedAt:null},
+        savedAt:data.saved_at||data.updated_at||null
+      };
+
+      // Fallback only if the saved record does not contain auditor metadata.
+      if(!audit.meta.auditor){
+        audit.meta.auditor=currentUser.full_name;
+        audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
+      }
+
+      fullRender();
+      applyUserAccess();
+      await refreshAuditorOptions();
+
+      // refreshAuditorOptions can sync the saved auditor/type if it is in the directory.
+      if(audit.meta.auditorType==='external'){
+        auditorExternal.checked=true; auditorInternal.checked=false;
+      }else if(audit.meta.auditorType==='internal'){
+        auditorInternal.checked=true; auditorExternal.checked=false;
+      }
+
+      await refreshLoadSelect();
+      const selectedValue=`${site}|${month}`;
+      if([...elLoadSelect.options].some(o=>o.value===selectedValue)){
+        elLoadSelect.value=selectedValue;
+      }
+
+      showStatus(`Loaded audit for ${site} · ${month}. Other accessible records remain available in the dropdown.`);
+    }catch(e){
+      console.error(e);
+      showStatus('Could not load that audit: '+e.message,true);
+    }
+  }
+
+  async function saveAudit(){
+    if(!currentUser){ showStatus('Please sign in first.',true); return; }
+    if(!audit.meta.site){ showStatus('Please select a plant site before saving.',true); elSite.focus(); return; }
+    if(!audit.meta.month){ showStatus('Please choose an audit month before saving.',true); return; }
+    applyAuditorSelection();
+    const missingScores=SECTIONS.flatMap(s=>s.items.map(([code])=>itemKey(s.id,code))).filter(k=>audit.scores[k]===undefined || audit.scores[k]===null || audit.scores[k]==='');
+    if(missingScores.length){ showStatus(`Please enter marks for all 82 checklist questions. ${missingScores.length} mark(s) are still missing.`,true); return; }
+    const missingQ14Scores=Q14.filter(q=>audit.q14.score[q.id]===undefined || audit.q14.score[q.id]===null || audit.q14.score[q.id]==='');
+    if(missingQ14Scores.length){ showStatus(`Please enter all 5 Q14 scores. ${missingQ14Scores.length} score(s) are missing.`,true); return; }
+    const missingQ14Text=Q14.filter(q=>!String(audit.q14.text[q.id]||'').trim());
+    if(missingQ14Text.length){ showStatus(`Please complete all 5 Q14 written responses. ${missingQ14Text.length} response(s) are missing.`,true); return; }
+    if(!String(audit.specialNote||'').trim()){ showStatus('Please complete the Special Note by the Auditor before saving.',true); document.getElementById('specialNote')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    if(!audit.signature || !audit.signature.dataUrl){ showStatus('Please provide the auditor e-signature before saving the final audit.',true); document.getElementById('signatureCanvas')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    const overallTotal = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
+    audit.savedAt = new Date().toISOString();
+    audit.meta.org='Vidullanka PLC';
+    if(!audit.meta.auditor){
+      audit.meta.auditor=currentUser.full_name;
+      audit.meta.auditorType=currentUser.role==='external'?'external':'internal';
+    }
+    try{
+      const body=await api('/api/audits',{method:'POST',body:JSON.stringify({
+        site:audit.meta.site,
+        audit_month:audit.meta.month,
+        auditor:audit.meta.auditor,
+        auditor_type:audit.meta.auditorType,
+        audit,
+        overall_total:overallTotal
+      })});
+      audit.savedAt=body.audit?.saved_at||audit.savedAt;
+      await refreshLoadSelect();
+      showStatus(`Saved ${audit.meta.site} · ${audit.meta.month} to Neon PostgreSQL.`);
+    }catch(e){console.error(e);showStatus('Could not save to database: '+e.message,true);}
+  }
+
+  async function deleteAudit(){
+    const site=audit.meta.site, month=audit.meta.month;
+    if(!site || !month){showStatus('Nothing to delete.',true);return;}
+    if(!confirm(`WARNING: You are about to permanently delete the saved audit for ${site} · ${month}.
+
+Any unsaved information currently entered on the screen will also be lost.
+
+If you have not saved your completed audit, click Cancel and save it first.
+
+Continue with deletion?`))return;
+    try{
+      await api(`/api/audits?site=${encodeURIComponent(site)}&month=${encodeURIComponent(month)}`,{method:'DELETE'});
+      audit=blankAudit(); audit.meta.org='Vidullanka PLC'; audit.meta.site=site; audit.meta.auditor=currentUser?.full_name||'';
+      audit.meta.auditorType=currentUser?.role==='external'?'external':'internal';
+      const now=new Date(); audit.meta.month=now.toISOString().slice(0,7);
+      fullRender(); applyUserAccess(); await refreshLoadSelect();
+      showStatus(`Deleted audit for ${site} · ${month}.`);
+    }catch(e){console.error(e);showStatus('Could not delete from database: '+e.message,true);}
+  }
+
+  async function doLogin(username,password){
+    const body=await api('/api/login',{method:'POST',body:JSON.stringify({username,password})});
+    if(!body.ok) throw new Error('Login failed.');
+    const user=await loadCurrentUser();
+    if(!user) throw new Error('Signed in but the user session could not be loaded.');
+    authScreen.style.display='none'; root.style.display='block';
+    audit=blankAudit(); audit.meta.org='Vidullanka PLC'; audit.meta.month=new Date().toISOString().slice(0,7);
+    applyUserAccess(); await refreshAuditorOptions(); fullRender(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
+  }
+
+  const signupModal=document.getElementById('signupModal');
+  const signupForm=document.getElementById('signupForm');
+  const signupMsg=document.getElementById('signupMsg');
+  const signupBtn=document.getElementById('signupBtn');
+  const signupCancel=document.getElementById('signupCancel');
+  const signupSites=document.getElementById('signupSites');
+  const signupSitesField=document.getElementById('signupSitesField');
+  const signupFullName=document.getElementById('signupFullName');
+  signupSites.innerHTML=SITES.map(s=>`<label style="font-size:12px;"><input type="checkbox" name="signupSite" value="${s}"> ${s}</label>`).join('');
+
+  function syncSignupRoleUI(){
+    const role=document.querySelector('input[name="signupRole"]:checked')?.value || 'internal';
+    const internal=role==='internal';
+    signupSitesField.style.display=internal?'block':'none';
+    if(!internal){
+      document.querySelectorAll('input[name="signupSite"]').forEach(x=>x.checked=false);
+    }
+  }
+
+  signupBtn.addEventListener('click',()=>{
+    signupModal.style.display='flex';
+    signupMsg.textContent='';
+    signupMsg.style.color='var(--red)';
+    signupForm.reset();
+    document.querySelector('input[name="signupRole"][value="internal"]').checked=true;
+    syncSignupRoleUI();
+    signupFullName.focus();
+  });
+
+  signupCancel.addEventListener('click',()=>{
+    signupModal.style.display='none';
+    signupForm.reset();
+    syncSignupRoleUI();
+  });
+
+  document.querySelectorAll('input[name="signupRole"]').forEach(r=>{
+    r.addEventListener('change',syncSignupRoleUI);
+  });
+
+  signupForm.addEventListener('submit',async e=>{
+    e.preventDefault();
+    signupMsg.style.color='var(--red)';
+    signupMsg.textContent='Creating account…';
+
+    try{
+      const role=document.querySelector('input[name="signupRole"]:checked')?.value || 'internal';
+      const fullName=signupFullName.value.trim();
+      const username=document.getElementById('signupUsername').value.trim();
+      const password=document.getElementById('signupPassword').value;
+      const sites=[...document.querySelectorAll('input[name="signupSite"]:checked')].map(x=>x.value);
+
+      if(!fullName || !username || !password) throw new Error('Please complete all required fields.');
+      if(role==='internal' && sites.length===0){
+        throw new Error('Please select at least one assigned site for an Internal Auditor.');
+      }
+
+      const body=await api('/api/signup',{
+        method:'POST',
+        body:JSON.stringify({full_name:fullName,username,password,role,sites})
+      });
+
+      signupMsg.style.color='var(--green-deep)';
+      signupMsg.textContent=`Account created as ${role==='external'?'External':'Internal'} Auditor. You can now sign in.`;
+
+      // Refresh the auditor directory so the new name immediately appears
+      // in the Auditor dropdown after sign-in.
+      if(currentUser){
+        await refreshAuditorOptions();
+      }
+
+      setTimeout(()=>{
+        signupModal.style.display='none';
+        signupForm.reset();
+        syncSignupRoleUI();
+        document.getElementById('loginUsername').value=body.user.username;
+      },900);
+    }catch(err){
+      signupMsg.style.color='var(--red)';
+      signupMsg.textContent=err.message||'Could not create account.';
+    }
+  });
+
+  loginForm.addEventListener('submit',async e=>{
+    e.preventDefault(); loginMsg.textContent='Signing in…';
+    try{ await doLogin(document.getElementById('loginUsername').value,document.getElementById('loginPassword').value); loginMsg.textContent=''; }
+    catch(err){ loginMsg.textContent=err.message||'Unable to sign in.'; }
+  });
+  logoutBtn.addEventListener('click',async()=>{
+    try{await api('/api/logout',{method:'POST'});}catch(_e){}
+    currentUser=null; dbReady=false; root.style.display='none'; authScreen.style.display='flex'; loginForm.reset(); document.getElementById('loginUsername').focus();
+  });
+
+  // ---------------- Export to Excel ----------------
+  function exportToExcel(){
+    if(typeof XLSX === 'undefined'){
+      showStatus('Excel library failed to load — check your connection and retry.', true);
+      return;
+    }
+    const rows = [];
+    rows.push(['JASTECA National Awards — "Taiki Akimoto" Japanese Management Excellence Awards']);
+    rows.push(['5S Monthly Audit Sheet — Service & Manufacturing Sectors']);
+    rows.push([]);
+    rows.push(['Organisation', audit.meta.org||'']);
+    rows.push(['Plant Site', audit.meta.site||'']);
+    rows.push(['Department / Sub-area', audit.meta.dept||'']);
+    rows.push(['Audit month', audit.meta.month||'']);
+    rows.push(['Auditor', audit.meta.auditor||'']);
+    rows.push(['Saved at', audit.savedAt||'']);
+    rows.push([]);
+    rows.push(['S.No','Description','Rating (1-5)','Rating label']);
+
+    SECTIONS.forEach(section=>{
+      rows.push([`${section.num}. ${section.title.toUpperCase()}`, section.desc, '', '']);
+      section.items.forEach(([code,label])=>{
+        const key = itemKey(section.id, code);
+        const v = audit.scores[key];
+        rows.push([code, label, v||'', v?RATING_LABELS[v-1]:'']);
+      });
+      rows.push(['', `TOTAL (out of ${section.max})`, sectionTotal(section), '']);
+      if(audit.sectionNotes[section.id]){
+        rows.push(['', 'Notes: '+audit.sectionNotes[section.id], '', '']);
+      }
+      rows.push([]);
+    });
+
+    const grand5s = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0);
+    rows.push(['', `GRAND TOTAL — Sections 1-13 (out of ${GRAND_MAX})`, grand5s, '']);
+    rows.push([]);
+
+    rows.push(['14. OTHER JAPANESE MANAGEMENT PRACTICES','','Score (0-10)','']);
+    Q14.forEach(q=>{
+      rows.push([q.label, q.text, audit.q14.score[q.id]!==undefined?audit.q14.score[q.id]:'', '']);
+      rows.push(['', 'Response: '+(audit.q14.text[q.id]||''), '', '']);
+    });
+    rows.push(['', `TOTAL (out of ${Q14_MAX})`, q14Total(), '']);
+    rows.push([]);
+
+    rows.push(['', `OVERALL GRAND TOTAL (out of ${GRAND_MAX+Q14_MAX})`, grand5s+q14Total(), '']);
+    rows.push([]);
+    rows.push(['Auditor E-Signature', audit.signature && audit.signature.dataUrl ? 'Captured' : 'Not signed']);
+    rows.push(['Signature timestamp', audit.signature && audit.signature.signedAt ? audit.signature.signedAt : '']);
+    rows.push([]);
+    rows.push(['Special note by the auditors', audit.specialNote||'']);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:10},{wch:70},{wch:14},{wch:14}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Audit Sheet');
+
+    const monthLabel = audit.meta.month || 'draft';
+    const siteLabel = audit.meta.site || 'site';
+    const fname = `5S-Audit-${siteLabel}-${monthLabel}${audit.meta.org? '-'+audit.meta.org.replace(/[^a-z0-9]+/gi,'_') : ''}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    showStatus('Downloaded '+fname);
+  }
+
+  // ---------------- Export to Word ----------------
+  function esc(s){
+    return String(s==null?'':s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function exportToWord(){
+    const grand5s = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0);
+    const overall = grand5s + q14Total();
+
+    let body = '';
+    body += `<h1 style="font-family:Calibri,sans-serif;font-size:18pt;text-align:center;margin-bottom:2px;">JASTECA National Awards</h1>`;
+    body += `<h2 style="font-family:Calibri,sans-serif;font-size:13pt;text-align:center;font-style:italic;margin-top:0;">"Taiki Akimoto" Japanese Management Excellence Awards</h2>`;
+    body += `<h3 style="font-family:Calibri,sans-serif;font-size:14pt;text-align:center;text-decoration:underline;">Audit Sheet</h3>`;
+    body += `<p style="font-family:Calibri,sans-serif;font-size:11pt;text-align:center;">Service &amp; Manufacturing Sectors (5S, KPIs, and Japanese Management Implementations)</p>`;
+
+    body += `<table style="border-collapse:collapse;width:100%;font-family:Calibri,sans-serif;font-size:10.5pt;margin-top:10px;" cellpadding="4">`;
+    const metaRow = (k,v)=>`<tr><td style="border:1px solid #999;width:22%;background:#F2F4EF;"><b>${esc(k)}</b></td><td style="border:1px solid #999;">${esc(v)}</td></tr>`;
+    body += metaRow('Organisation', audit.meta.org);
+    body += metaRow('Plant Site', audit.meta.site);
+    body += metaRow('Department / Sub-area', audit.meta.dept);
+    body += metaRow('Audit month', audit.meta.month);
+    body += metaRow('Auditor', audit.meta.auditor);
+    body += `</table>`;
+
+    SECTIONS.forEach(section=>{
+      body += `<h4 style="font-family:Calibri,sans-serif;font-size:12pt;margin:16px 0 2px;">${esc(section.num+'. '+section.title.toUpperCase())}</h4>`;
+      body += `<p style="font-family:Calibri,sans-serif;font-size:9.5pt;color:#555;margin:0 0 6px;">${esc(section.desc)}</p>`;
+      body += `<table style="border-collapse:collapse;width:100%;font-family:Calibri,sans-serif;font-size:10pt;" cellpadding="4">`;
+      body += `<tr style="background:#1B2430;color:#fff;"><td style="border:1px solid #999;width:8%;"><b>S.No</b></td><td style="border:1px solid #999;width:62%;"><b>Description</b></td><td style="border:1px solid #999;width:12%;"><b>Rating</b></td><td style="border:1px solid #999;width:18%;"><b>Label</b></td></tr>`;
+      section.items.forEach(([code,label])=>{
+        const key = itemKey(section.id, code);
+        const v = audit.scores[key];
+        body += `<tr><td style="border:1px solid #999;">${esc(code)}</td><td style="border:1px solid #999;">${esc(label)}</td><td style="border:1px solid #999;text-align:center;">${v||''}</td><td style="border:1px solid #999;">${v?RATING_LABELS[v-1]:''}</td></tr>`;
+      });
+      body += `<tr><td style="border:1px solid #999;"></td><td style="border:1px solid #999;"><b>TOTAL (out of ${section.max})</b></td><td style="border:1px solid #999;text-align:center;"><b>${sectionTotal(section)}</b></td><td style="border:1px solid #999;"></td></tr>`;
+      body += `</table>`;
+      if(audit.sectionNotes[section.id]){
+        body += `<p style="font-family:Calibri,sans-serif;font-size:9.5pt;margin:6px 0 0;"><b>Notes:</b> ${esc(audit.sectionNotes[section.id])}</p>`;
+      }
+    });
+
+    body += `<h3 style="font-family:Calibri,sans-serif;font-size:13pt;margin-top:18px;">GRAND TOTAL — Sections 1–13: ${grand5s} / ${GRAND_MAX}</h3>`;
+
+    body += `<h4 style="font-family:Calibri,sans-serif;font-size:12pt;margin-top:18px;">14. OTHER JAPANESE MANAGEMENT PRACTICES</h4>`;
+    Q14.forEach(q=>{
+      const score = audit.q14.score[q.id]!==undefined ? audit.q14.score[q.id] : '';
+      body += `<p style="font-family:Calibri,sans-serif;font-size:10.5pt;margin:10px 0 2px;"><b>${esc(q.label)}</b> ${esc(q.text)}</p>`;
+      body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;margin:0 0 2px;background:#F7F8F5;border:1px solid #ddd;padding:6px;">${esc(audit.q14.text[q.id]||'(no response entered)')}</p>`;
+      body += `<p style="font-family:Calibri,sans-serif;font-size:9.5pt;color:#555;margin:0;">Score: <b>${score}</b> / 10</p>`;
+    });
+    body += `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin-top:8px;"><b>Section 14 total: ${q14Total()} / ${Q14_MAX}</b></p>`;
+
+    body += `<h2 style="font-family:Calibri,sans-serif;font-size:14pt;margin-top:20px;">OVERALL GRAND TOTAL: ${overall} / ${GRAND_MAX+Q14_MAX}</h2>`;
+
+    body += `<h4 style="font-family:Calibri,sans-serif;font-size:11pt;margin-top:18px;">Auditor E-Signature</h4>`;
+    if(audit.signature && audit.signature.dataUrl){
+      body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;margin:4px 0;"><b>Signed by:</b> ${esc(audit.meta.auditor||'')}</p>`;
+      body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;margin:4px 0;"><b>Signed at:</b> ${esc(audit.signature.signedAt ? new Date(audit.signature.signedAt).toLocaleString() : '')}</p>`;
+      body += `<p style="margin:6px 0;"><img src="${audit.signature.dataUrl}" alt="Auditor electronic signature" style="width:260px;height:100px;border:1px solid #999;object-fit:contain;"></p>`;
+    } else {
+      body += `<p style="font-family:Calibri,sans-serif;font-size:10pt;color:#B5533C;">Not signed.</p>`;
+    }
+
+    body += `<h4 style="font-family:Calibri,sans-serif;font-size:11pt;margin-top:18px;">Special Note by the Auditors</h4>`;
+    body += `<p style="font-family:Calibri,sans-serif;font-size:10.5pt;border:1px solid #ddd;padding:8px;min-height:40px;">${esc(audit.specialNote||'')}</p>`;
+
+    const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset="utf-8"><title>5S Audit Sheet</title>
+      <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+      </head><body>${body}</body></html>`;
+
+    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const monthLabel = audit.meta.month || 'draft';
+    const siteLabel = audit.meta.site || 'site';
+    a.href = url;
+    a.download = `5S-Audit-${siteLabel}-${monthLabel}${audit.meta.org? '-'+audit.meta.org.replace(/[^a-z0-9]+/gi,'_') : ''}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    showStatus('Downloaded '+a.download);
+  }
+
+  $('#btnExportWord').addEventListener('click', exportToWord);
+  $('#btnExport').addEventListener('click', exportToExcel);
+  $('#btnDelete').addEventListener('click', deleteAudit);
+  $('#btnNew').addEventListener('click', ()=>{
+    if(!confirm('Start a new blank audit? Unsaved changes will be lost.')) return;
+    const keepSite = audit.meta.site;
+    audit = blankAudit();
+    audit.meta.site = keepSite;
+    const now = new Date();
+    audit.meta.month = now.toISOString().slice(0,7);
+    applyUserAccess();
+    fullRender();
+    refreshAuditorOptions().then(refreshLoadSelect);
+  });
+  elLoadSelect.addEventListener('change', e=> loadAudit(e.target.value));
+
+  // ---------------- Init ----------------
+  (async function init(){
+    const user = await loadCurrentUser();
+    if(user){
+      authScreen.style.display='none';
+      root.style.display='block';
+      audit.meta.org='Vidullanka PLC';
+      audit.meta.month=new Date().toISOString().slice(0,7);
+      applyUserAccess();
+      await refreshAuditorOptions();
+      fullRender();
+      applyUserAccess();
+      await refreshAuditorOptions();
+      await refreshLoadSelect();
+    }else{
+      root.style.display='none';
+      authScreen.style.display='flex';
+    }
+  })();
+
+})();
+</script>
+</body>
+</html>
