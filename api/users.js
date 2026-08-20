@@ -1,12 +1,10 @@
 import bcrypt from 'bcryptjs';
-import { db, json, readBody } from './_db.js';
-import { requireUser, requireAdmin } from './_auth.js';
-
+import { db, json, readBody } from '../lib/_db.js';
+import { requireUser, requireAdmin } from '../lib/_auth.js';
 export default async function handler(req, res) {
   try {
     const admin = await requireUser(req, res); if (!admin) return; if (!requireAdmin(admin, res)) return;
     const sql = db();
-
     if (req.method === 'GET') {
       const rows = await sql`
         SELECT u.id, u.username, u.full_name, u.role, u.is_active, u.last_login_at,
@@ -20,12 +18,10 @@ export default async function handler(req, res) {
       `;
       return json(res, 200, { users: rows });
     }
-
     if (req.method === 'POST') {
       const b = await readBody(req);
       if (!b.username || !b.full_name || !b.password || !['internal', 'external', 'admin'].includes(b.role))
         return json(res, 400, { error: 'username, full_name, password and role are required.' });
-
       let organisationId = null;
       if (b.role === 'internal') {
         organisationId = Number(b.organisation_id);
@@ -34,7 +30,6 @@ export default async function handler(req, res) {
         if (!orgExists.length) return json(res, 400, { error: 'Unknown organisation.' });
       }
       // external/admin: no organisation_id — externals pick org per-audit, admins aren't org-scoped.
-
       const hash = await bcrypt.hash(b.password, 12);
       const rows = await sql`
         INSERT INTO five_s_users(username, full_name, password_hash, role, is_active, organisation_id)
@@ -45,7 +40,6 @@ export default async function handler(req, res) {
       for (const site of sites) await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${rows[0].id}, ${site}) ON CONFLICT DO NOTHING`;
       return json(res, 201, { user: rows[0] });
     }
-
     return json(res, 405, { error: 'Method not allowed.' });
   } catch (e) {
     console.error(e);

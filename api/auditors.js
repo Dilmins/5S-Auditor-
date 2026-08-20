@@ -1,12 +1,10 @@
-import { db, json } from './_db.js';
-import { requireUser } from './_auth.js';
-
+import { db, json } from '../lib/_db.js';
+import { requireUser } from '../lib/_auth.js';
 export default async function handler(req, res) {
   try {
     const user = await requireUser(req, res); if (!user) return;
     if (req.method !== 'GET') return json(res, 405, { error: 'Method not allowed.' });
     const sql = db();
-
     // Externals/admins aren't tied to one org, so they keep cross-org visibility.
     // Internal auditors see their own org's internal peers, plus all external
     // auditors (externals can audit any org, so internals still need to recognise them).

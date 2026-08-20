@@ -1,11 +1,9 @@
 import bcrypt from 'bcryptjs';
-import { db, json, readBody } from './_db.js';
-
+import { db, json, readBody } from '../lib/_db.js';
 const PREDEFINED = {
   Ruwan: 'internal', Shanuka: 'internal', Arunoda: 'internal', Chanaka: 'internal',
   Roshan: 'external', Mahela: 'external', Damitha: 'external'
 };
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed.' });
   try {
@@ -15,24 +13,18 @@ export default async function handler(req, res) {
     const password = String(b.password || '');
     if (!fullName || !username || !password) return json(res, 400, { error: 'Full name, username and password are required.' });
     if (password.length < 8) return json(res, 400, { error: 'Password must contain at least 8 characters.' });
-
     const role = PREDEFINED[fullName] || (['internal', 'external'].includes(b.role) ? b.role : null);
     if (!role) return json(res, 400, { error: 'Please select Internal Auditor or External Auditor.' });
-
     const sql = db();
     const exists = await sql`SELECT id FROM five_s_users WHERE lower(username)=lower(${username}) LIMIT 1`;
     if (exists.length) return json(res, 409, { error: 'That username is already registered.' });
-
     let organisationId = null;
     let sites = [];
-
     if (role === 'internal') {
       // Internal auditors are locked to one organisation at signup, plus site(s) within it.
       const orgName = String(b.organisation || '').trim();
       if (!orgName) return json(res, 400, { error: 'Organisation is required for internal auditors.' });
-
       const existingOrg = await sql`SELECT id FROM five_s_organisations WHERE lower(name)=lower(${orgName}) LIMIT 1`;
-
       if (existingOrg.length) {
         organisationId = existingOrg[0].id;
         const orgSites = await sql`SELECT site FROM five_s_org_sites WHERE organisation_id=${organisationId}`;
@@ -48,13 +40,11 @@ export default async function handler(req, res) {
           await sql`INSERT INTO five_s_org_sites(organisation_id, site) VALUES(${organisationId}, ${site}) ON CONFLICT DO NOTHING`;
         }
       }
-
       if (!sites.length) return json(res, 400, { error: 'Internal auditors must select at least one assigned site.' });
     }
     // External auditors: organisationId stays null, sites stays []. canAccessSite()/
     // canAccessOrg() already bypass both checks for role === 'external' — they pick
     // an organisation per audit instead (see audits.js).
-
     const hash = await bcrypt.hash(password, 12);
     const rows = await sql`
       INSERT INTO five_s_users(username, full_name, password_hash, role, is_active, organisation_id)

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { db, json, readBody } from './_db.js';
+import { db, json, readBody } from '../lib/_db.js';
 
 export default async function handler(req,res){
   if(req.method!=='POST')return json(res,405,{error:'Method not allowed.'});

@@ -1,5 +1,5 @@
-import { db, json, readBody } from './_db.js';
-import { requireUser, canAccessSite } from './_auth.js';
+import { db, json, readBody } from '../lib/_db.js';
+import { requireUser, canAccessSite } from '../lib/_auth.js';
 
 export default async function handler(req, res) {
   try {

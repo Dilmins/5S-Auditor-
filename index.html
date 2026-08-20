@@ -974,14 +974,14 @@
   // ---------------- Organisations (multi-tenant) ----------------
   let orgDirectory = []; // [{id, name}]
   async function loadOrganisations(){
-    try{ const body = await api('/api/organisations'); orgDirectory = body.organisations || []; }
+    try{ const body = await api('/api/orgs?resource=organisations'); orgDirectory = body.organisations || []; }
     catch(e){ console.error(e); orgDirectory = []; }
     return orgDirectory;
   }
 
   async function loadSitesForOrg(organisationId){
     if(!organisationId) return [];
-    try{ const body = await api(`/api/org-sites?organisation_id=${encodeURIComponent(organisationId)}`); return body.sites || []; }
+    try{ const body = await api(`/api/orgs?resource=sites&organisation_id=${encodeURIComponent(organisationId)}`); return body.sites || []; }
     catch(e){ console.error(e); showStatus('Could not load sites for that organisation: '+e.message, true); return []; }
   }
 
@@ -1257,7 +1257,7 @@
   const signupOrgList = signupOrgField.querySelector('#signupOrgList');
 
   // New-organisation site entry (shown only when the typed org name doesn't
-  // match an existing one, since /api/org-sites would come back empty for it).
+  // match an existing one, since /api/orgs?resource=sites would come back empty for it).
   const signupNewSitesField = document.createElement('div');
   signupNewSitesField.className = 'auth-field';
   signupNewSitesField.id = 'signupNewSitesField';
@@ -1269,7 +1269,7 @@
 
   let signupOrgDirectory = [];
   async function loadSignupOrgs(){
-    try{ const body = await api('/api/organisations'); signupOrgDirectory = body.organisations || []; }
+    try{ const body = await api('/api/orgs?resource=organisations'); signupOrgDirectory = body.organisations || []; }
     catch(e){ console.error(e); signupOrgDirectory = []; }
     signupOrgList.innerHTML = signupOrgDirectory.map(o=>`<option value="${escHtml(o.name)}"></option>`).join('');
   }
@@ -1284,7 +1284,7 @@
     if(matched){
       signupNewSitesField.style.display = 'none';
       try{
-        const body = await api(`/api/org-sites?organisation_id=${matched.id}`);
+        const body = await api(`/api/orgs?resource=sites&organisation_id=${matched.id}`);
         const sites = body.sites || [];
         signupSites.innerHTML = sites.length
           ? sites.map(s=>`<label style="font-size:12px;"><input type="checkbox" name="signupSite" value="${escHtml(s)}"> ${escHtml(s)}</label>`).join('')

@@ -1,5 +1,5 @@
-import { db, getCookie, json, cookie } from './_db.js';
-import { hashToken } from './_auth.js';
+import { db, getCookie, json, cookie } from '../lib/_db.js';
+import { hashToken } from '../lib/_auth.js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed.' });
   try {
