@@ -354,7 +354,7 @@
       <div class="auth-field"><label>Username</label><input id="signupUsername" autocomplete="username" required></div>
       <div class="auth-field"><label>Password</label><input id="signupPassword" type="password" autocomplete="new-password" required></div>
       <div class="auth-field"><label>Auditor type</label>
-        <div class="auditor-type"><label><input type="radio" name="signupRole" value="internal" checked> Internal Auditor</label><label><input type="radio" name="signupRole" value="external"> External Auditor</label></div>
+        <div class="auditor-type"><label><input type="radio" name="signupRole" value="internal" checked> Auditor</label><label><input type="radio" name="signupRole" value="external"> Senior Auditor</label></div>
       </div>
       <div class="auth-field" id="signupSitesField"><label>Assigned site(s) — Internal auditors</label><div id="signupSites" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div></div>
       <button id="signupSubmit" class="btn-primary" type="submit" style="width:100%;">Create account</button>
@@ -421,8 +421,8 @@
     <div class="field" style="min-width:245px;flex:1.15;">
       <label>Auditor Type</label>
       <div class="auditor-type">
-        <label><input type="radio" name="auditorType" id="auditorInternal" value="internal" disabled> Internal Auditor</label>
-        <label><input type="radio" name="auditorType" id="auditorExternal" value="external" disabled> External Auditor</label>
+        <label><input type="radio" name="auditorType" id="auditorInternal" value="internal" disabled> Auditor</label>
+        <label><input type="radio" name="auditorType" id="auditorExternal" value="external" disabled> Senior Auditor</label>
       </div>
     </div>
     <div class="field" style="max-width:180px;">
@@ -1114,7 +1114,7 @@
       if(!auditorDirectory.some(a=>a.full_name===currentUser.full_name)){
         auditorDirectory.unshift({ full_name:currentUser.full_name, role:currentUser.role==='external'?'external':'internal', sites:currentUser.sites||[] });
       }
-      const options = auditorDirectory.map(a => `<option value="${escHtml(a.full_name)}">${escHtml(a.full_name)} · ${a.role==='external'?'External Auditor':'Internal Auditor'}</option>`).join('');
+      const options = auditorDirectory.map(a => `<option value="${escHtml(a.full_name)}">${escHtml(a.full_name)} · ${a.role==='external'?'Senior Auditor':'Auditor'}</option>`).join('');
       elAuditor.innerHTML = '<option value="">— select auditor —</option>' + options + '<option value="__other__">Other / Enter name</option>';
       const current=audit.meta.auditor || currentUser.full_name || '';
       if(auditorDirectory.some(a=>a.full_name===current)){ elAuditor.value=current; elAuditorOther.style.display='none'; syncAuditorTypeFromSelection(); }
@@ -1127,7 +1127,7 @@
     }catch(e){
       console.error(e);
       elAuditor.innerHTML='<option value="">— select auditor —</option>' +
-        `<option value="${escHtml(currentUser.full_name)}">${escHtml(currentUser.full_name)} · ${currentUser.role==='external'?'External Auditor':'Internal Auditor'}</option>` +
+        `<option value="${escHtml(currentUser.full_name)}">${escHtml(currentUser.full_name)} · ${currentUser.role==='external'?'Senior Auditor':'Auditor'}</option>` +
         '<option value="__other__">Other / Enter name</option>';
       elAuditor.value=audit.meta.auditor||currentUser.full_name;
       syncAuditorTypeFromSelection();
@@ -1166,7 +1166,7 @@
 
   function applyUserAccess(){
     if(!currentUser) return;
-    const roleLabel = currentUser.role === 'external' ? 'External Auditor' : currentUser.role === 'admin' ? 'Administrator' : 'Internal Auditor';
+    const roleLabel = currentUser.role === 'external' ? 'Senior Auditor' : currentUser.role === 'admin' ? 'Administrator' : 'Auditor';
     sessionUser.innerHTML = `<span class="chip-label">${escHtml(currentUser.full_name)} · ${escHtml(roleLabel)}</span>`;
     const navAdminLink = document.getElementById('navAdminLink');
     if(navAdminLink) navAdminLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
@@ -1196,7 +1196,7 @@
     list.sort((a,b)=>{ const byMonth=String(b.audit_month||'').localeCompare(String(a.audit_month||'')); if(byMonth!==0) return byMonth; return String(a.site||'').localeCompare(String(b.site||'')); });
     const previousValue = elLoadSelect.value || (audit.meta.site && audit.meta.month ? `${audit.meta.site}|${audit.meta.month}` : '');
     elLoadSelect.innerHTML = '<option value="">— select record —</option>' + list.map(x=>{
-      const month=x.audit_month||''; const type=(x.auditor_type||'').toLowerCase()==='external' ? 'External Auditor' : 'Internal Auditor';
+      const month=x.audit_month||''; const type=(x.auditor_type||'')==='Senior Auditor' ? 'Senior Auditor' : 'Auditor';
       // Show the organisation per row so external/admin users (who see audits
       // across every org, and may share site codes between orgs) can tell them apart.
       const orgPrefix = isExternalOrAdmin && x.organisation ? `${x.organisation} · ` : '';
@@ -1400,7 +1400,7 @@
         const matched = matchedSignupOrg();
         if(matched){
           const sites=[...document.querySelectorAll('input[name="signupSite"]:checked')].map(x=>x.value);
-          if(sites.length===0) throw new Error('Please select at least one assigned site for an Internal Auditor.');
+          if(sites.length===0) throw new Error('Please select at least one assigned site for an Auditor.');
           payload.sites = sites;
         } else {
           const sites = signupNewSitesInput.value.split(',').map(s=>s.trim()).filter(Boolean);
