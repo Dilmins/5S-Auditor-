@@ -1357,6 +1357,21 @@
   signupSitesField.parentNode.insertBefore(signupNewSitesField, signupSitesField.nextSibling);
   const signupNewSitesInput = signupNewSitesField.querySelector('#signupNewSitesInput');
 
+  // Optional org-creation field for Senior Auditors (external). They aren't
+  // locked to an org (they pick one per-audit — see audits.js), but they may
+  // optionally create a brand-new organisation + starting sites right here,
+  // same as the "+ Add organisation" control they get post-login.
+  const signupExternalOrgField = document.createElement('div');
+  signupExternalOrgField.className = 'auth-field';
+  signupExternalOrgField.id = 'signupExternalOrgField';
+  signupExternalOrgField.style.display = 'none';
+  signupExternalOrgField.innerHTML = `<label>Add a new organisation (optional)</label>
+    <input id="signupExternalOrgInput" placeholder="New organisation name — leave blank to skip" autocomplete="off" />
+    <input id="signupExternalSitesInput" style="margin-top:6px;" placeholder="Starting site codes, e.g. HQ, PLANT1, PLANT2 (comma separated)" autocomplete="off" />`;
+  signupSitesField.parentNode.insertBefore(signupExternalOrgField, signupSitesField);
+  const signupExternalOrgInput = signupExternalOrgField.querySelector('#signupExternalOrgInput');
+  const signupExternalSitesInput = signupExternalOrgField.querySelector('#signupExternalSitesInput');
+
   let signupOrgDirectory = [];
   async function loadSignupOrgs(){
     try{ const body = await api('/api/orgs?resource=organisations'); signupOrgDirectory = body.organisations || []; }
@@ -1397,15 +1412,18 @@
     signupOrgField.style.display = internal ? 'block' : 'none';
     signupSitesField.style.display = internal ? 'block' : 'none';
     signupNewSitesField.style.display = internal && !matchedSignupOrg() && signupOrgInput.value.trim() ? 'block' : 'none';
+    signupExternalOrgField.style.display = internal ? 'none' : 'block';
     if(!internal){
       document.querySelectorAll('input[name="signupSite"]').forEach(x=>x.checked=false);
       signupOrgInput.value=''; signupNewSitesInput.value=''; signupSites.innerHTML='';
+    } else {
+      signupExternalOrgInput.value=''; signupExternalSitesInput.value='';
     }
   }
   signupBtn.addEventListener('click', async ()=>{
     signupModal.style.display='flex'; signupMsg.textContent=''; signupMsg.style.color='var(--red)';
     signupForm.reset(); document.querySelector('input[name="signupRole"][value="internal"]').checked=true;
-    signupSites.innerHTML=''; signupNewSitesInput.value='';
+    signupSites.innerHTML=''; signupNewSitesInput.value=''; signupExternalOrgInput.value=''; signupExternalSitesInput.value='';
     await loadSignupOrgs();
     syncSignupRoleUI(); signupFullName.focus();
   });
@@ -1434,6 +1452,12 @@
           const sites = signupNewSitesInput.value.split(',').map(s=>s.trim()).filter(Boolean);
           if(sites.length===0) throw new Error('Please enter at least one starting site code for the new organisation.');
           payload.sites = sites;
+        }
+      } else {
+        const newOrgName = signupExternalOrgInput.value.trim();
+        if(newOrgName){
+          payload.organisation = newOrgName;
+          payload.sites = signupExternalSitesInput.value.split(',').map(s=>s.trim()).filter(Boolean);
         }
       }
       const body=await api('/api/signup',{ method:'POST', body:JSON.stringify(payload) });
