@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       const orgRow = await sql`SELECT name FROM five_s_organisations WHERE id=${organisationId} LIMIT 1`;
       const organisationName = orgRow[0]?.name || '';
 
-      const auditorType = user.role === 'external' ? 'External Auditor' : 'Internal Auditor';
+      const auditorType = user.role === 'external' ? 'Senior Auditor' : 'Auditor';
       const auditor = user.full_name;
       const overallTotal = Number(body.overall_total || 0);
       const rows = await sql`
