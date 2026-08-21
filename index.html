@@ -136,7 +136,11 @@
     grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:16px; margin-top:-4px;
   }
   #add-org-row, #add-site-row{flex-wrap:wrap; flex:1 1 220px; min-width:0;}
-  #add-org-row input, #add-site-row input{min-width:120px;}
+  #add-org-row input, #add-site-row input{
+    min-width:120px; font-family:inherit; font-size:14px; padding:8px 10px;
+    border:1px solid var(--line); border-radius:6px; background:#fdfdfb; color:var(--ink);
+  }
+  #add-org-row input:focus, #add-site-row input:focus{outline:2px solid var(--green); outline-offset:1px; border-color:var(--green);}
 
   .btnrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; grid-column:1 / -1; margin-top:2px;}
   .btnrow:empty{display:none;}
@@ -357,7 +361,7 @@
   <div class="auth-card">
     <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#2F7A52;font-weight:700;margin-bottom:6px;">JASTECA</div>
     <h2>5S Audit Login</h2>
-    <p>Sign in with your assigned auditor account. Internal auditors can access only their assigned site(s); external auditors can access all sites for the specified company.</p>
+    <p>Sign in with your assigned auditor account. Auditors can access only their assigned site(s) for the relavent company; Senior auditors can access all sites and all organizations.</p>
     <form id="loginForm">
       <div class="auth-field"><label for="loginUsername">Username</label><input id="loginUsername" autocomplete="username" required></div>
       <div class="auth-field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
@@ -376,7 +380,7 @@
 <div id="signupModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:20px;">
   <div class="auth-card" style="max-height:90vh;overflow:auto;">
     <h2 style="font-size:24px;">Auditor Sign Up</h2>
-    <p>Create your assigned auditor account. </p>
+    <p>Create your assigned auditor account.</p>
     <form id="signupForm">
       <div class="auth-field"><label>Full name</label><input id="signupFullName" required></div>
       <div class="auth-field"><label>Username</label><input id="signupUsername" autocomplete="username" required></div>
@@ -450,11 +454,11 @@
     <div class="metabar-extra" id="metabarExtra">
       <div id="add-org-row" style="display:none;gap:6px;">
         <input id="new-org-input" type="text" placeholder="New organisation name" style="flex:1;" />
-        <button id="add-org-btn" type="button" class="btn" style="white-space:nowrap;">+ Add organisation</button>
+        <button id="add-org-btn" type="button" class="btn-ghost" style="white-space:nowrap;">+ Add organisation</button>
       </div>
       <div id="add-site-row" style="display:flex;gap:6px;">
         <input id="new-site-input" type="text" placeholder="New site code" style="flex:1;" />
-        <button id="add-site-btn" type="button" class="btn" style="white-space:nowrap;">+ Add site</button>
+        <button id="add-site-btn" type="button" class="btn-ghost" style="white-space:nowrap;">+ Add site</button>
       </div>
     </div>
     <div class="btnrow">
