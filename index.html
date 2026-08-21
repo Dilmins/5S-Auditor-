@@ -126,13 +126,20 @@
   }
   .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--green); outline-offset:1px; border-color:var(--green);}
 
-  /* "+ Add organisation" / "+ Add site" rows: allowed to wrap their own
-     button under the input rather than force the parent grid track wider
-     than its column, which is what caused the old overflow bug. */
-  #add-org-row, #add-site-row{flex-wrap:wrap;}
+  /* "+ Add organisation" / "+ Add site" live in their own full-width row
+     below the core fields (not nested inside the Organisation/Plant Site
+     field boxes) so those two field boxes always stay the same height as
+     their neighbours — nesting them caused uneven row heights and left a
+     blank gap under whichever field didn't have its add-row (e.g. regular
+     Auditors, who never see "+ Add organisation"). */
+  .metabar-extra{
+    grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:16px; margin-top:-4px;
+  }
+  #add-org-row, #add-site-row{flex-wrap:wrap; flex:1 1 220px; min-width:0;}
   #add-org-row input, #add-site-row input{min-width:120px;}
 
   .btnrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; grid-column:1 / -1; margin-top:2px;}
+  .btnrow:empty{display:none;}
   button{
     font-family:inherit; cursor:pointer; border:none; border-radius:6px;
     padding:9px 14px; font-size:13.5px; font-weight:600; transition:transform .08s ease, opacity .15s ease;
@@ -326,7 +333,7 @@
   .session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:140px;}
   .logout-btn{background:#fff;color:var(--ink);padding:6px 10px;font-size:11px;flex-shrink:0;}
   .auditor-type{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fdfdfb;min-height:37px;}
-  .auditor-type label{font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px;}
+  .auditor-type label{font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;}
   .auditor-type input{accent-color:var(--green);}
   .readonly-field{background:#eef2ed !important;font-weight:600;}
 
@@ -409,20 +416,12 @@
     <div class="field">
       <label for="f-org">Organisation</label>
       <select id="f-org" class="readonly-field"><option value="">— loading —</option></select>
-      <div id="add-org-row" style="display:none;gap:6px;margin-top:6px;">
-        <input id="new-org-input" type="text" placeholder="New organisation name" style="flex:1;" />
-        <button id="add-org-btn" type="button" class="btn" style="white-space:nowrap;">+ Add organisation</button>
-      </div>
     </div>
     <div class="field">
       <label for="f-site">Plant Site</label>
       <select id="f-site">
         <option value="">— select site —</option>
       </select>
-      <div id="add-site-row" style="display:flex;gap:6px;margin-top:6px;">
-        <input id="new-site-input" type="text" placeholder="New site code" style="flex:1;" />
-        <button id="add-site-btn" type="button" class="btn" style="white-space:nowrap;">+ Add site</button>
-      </div>
     </div>
     <div class="field">
       <label for="f-dept">Department / Sub-area</label>
@@ -447,6 +446,16 @@
     <div class="field">
       <label for="loadSelect">Load saved audit</label>
       <select id="loadSelect"><option value="">— select record —</option></select>
+    </div>
+    <div class="metabar-extra" id="metabarExtra">
+      <div id="add-org-row" style="display:none;gap:6px;">
+        <input id="new-org-input" type="text" placeholder="New organisation name" style="flex:1;" />
+        <button id="add-org-btn" type="button" class="btn" style="white-space:nowrap;">+ Add organisation</button>
+      </div>
+      <div id="add-site-row" style="display:flex;gap:6px;">
+        <input id="new-site-input" type="text" placeholder="New site code" style="flex:1;" />
+        <button id="add-site-btn" type="button" class="btn" style="white-space:nowrap;">+ Add site</button>
+      </div>
     </div>
     <div class="btnrow">
       <button class="btn-ghost" id="btnNew">New</button>
