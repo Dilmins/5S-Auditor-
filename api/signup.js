@@ -42,9 +42,25 @@ export default async function handler(req, res) {
       }
       if (!sites.length) return json(res, 400, { error: 'Internal auditors must select at least one assigned site.' });
     }
-    // External auditors: organisationId stays null, sites stays []. canAccessSite()/
-    // canAccessOrg() already bypass both checks for role === 'external' — they pick
-    // an organisation per audit instead (see audits.js).
+    // External auditors: organisation_id always stays null (they aren't locked
+    // to one org — canAccessOrg()/canAccessSite() bypass checks for them, and
+    // they pick an organisation per-audit instead, see audits.js). But they
+    // may optionally create a brand-new organisation (+ starting sites) here,
+    // the same ability the "+ Add organisation" control gives them post-login.
+    let newOrgForExternal = null;
+    if (role === 'external' && String(b.organisation || '').trim()) {
+      const orgName = String(b.organisation).trim();
+      const existingOrg = await sql`SELECT id, name FROM five_s_organisations WHERE lower(name)=lower(${orgName}) LIMIT 1`;
+      if (existingOrg.length) {
+        return json(res, 409, { error: 'That organisation already exists — you can select it after signing in.' });
+      }
+      const created = await sql`INSERT INTO five_s_organisations(name) VALUES(${orgName}) RETURNING id, name`;
+      newOrgForExternal = created[0];
+      const newSites = Array.isArray(b.sites) ? [...new Set(b.sites.map(s => String(s).trim()).filter(Boolean))] : [];
+      for (const site of newSites) {
+        await sql`INSERT INTO five_s_org_sites(organisation_id, site) VALUES(${newOrgForExternal.id}, ${site}) ON CONFLICT DO NOTHING`;
+      }
+    }
     const hash = await bcrypt.hash(password, 12);
     const rows = await sql`
       INSERT INTO five_s_users(username, full_name, password_hash, role, is_active, organisation_id)
@@ -54,7 +70,7 @@ export default async function handler(req, res) {
     for (const site of sites) {
       await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${rows[0].id}, ${site}) ON CONFLICT DO NOTHING`;
     }
-    return json(res, 201, { user: rows[0] });
+    return json(res, 201, { user: rows[0], organisation: newOrgForExternal });
   } catch (e) {
     console.error(e);
     return json(res, 500, { error: e.message || 'Sign up failed.' });
