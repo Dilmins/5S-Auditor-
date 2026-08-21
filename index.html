@@ -412,7 +412,7 @@
   </nav>
   <div class="mast">
     <p class="mast-eyebrow">JASTECA · 5S Online Audit Form</p>
-    <h1>5S Monthly Audit Sheet</h1>
+    <h1>5S Audit Sheet</h1>
     <p class="sub">Service &amp; Manufacturing Sectors — 5S, KPIs, and Japanese Management Implementations</p>
   </div>
 
@@ -1027,6 +1027,10 @@
   async function api(path, options={}){
     const res = await fetch(path, {credentials:'same-origin', ...options, headers:{'Content-Type':'application/json', ...(options.headers||{})}});
     let body={}; try{ body=await res.json(); }catch(_e){}
+    if(res.status===401 && path!=='/api/login'){
+      currentUser=null; dbReady=false; root.style.display='none'; authScreen.style.display='flex';
+      loginMsg.textContent = body.error || 'Session expired. Please sign in again.';
+    }
     if(!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
     return body;
   }
@@ -1347,6 +1351,7 @@
     const user=await loadCurrentUser();
     if(!user) throw new Error('Signed in but the user session could not be loaded.');
     authScreen.style.display='none'; root.style.display='block';
+    showStatus('');
     audit=blankAudit(); audit.meta.month=new Date().toISOString().slice(0,7);
     maybeRestoreDraft();
     await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); fullRender(); await setupOrgField(); applyUserAccess(); await refreshAuditorOptions(); await refreshLoadSelect();
@@ -1502,7 +1507,7 @@
   });
   logoutBtn.addEventListener('click',async()=>{
     try{await api('/api/logout',{method:'POST'});}catch(_e){}
-    currentUser=null; dbReady=false; root.style.display='none'; authScreen.style.display='flex'; loginForm.reset(); document.getElementById('loginUsername').focus();
+    currentUser=null; dbReady=false; root.style.display='none'; authScreen.style.display='flex'; loginForm.reset(); showStatus(''); document.getElementById('loginUsername').focus();
   });
 
   function exportToExcel(){
