@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     if (!fullName || !username || !password) return json(res, 400, { error: 'Full name, username and password are required.' });
     if (password.length < 8) return json(res, 400, { error: 'Password must contain at least 8 characters.' });
     const role = PREDEFINED[fullName] || (['internal', 'external'].includes(b.role) ? b.role : null);
-    if (!role) return json(res, 400, { error: 'Please select Internal Auditor or External Auditor.' });
+    if (!role) return json(res, 400, { error: 'Please select Auditor or Senior Auditor.' });
     const sql = db();
     const exists = await sql`SELECT id FROM five_s_users WHERE lower(username)=lower(${username}) LIMIT 1`;
     if (exists.length) return json(res, 409, { error: 'That username is already registered.' });
