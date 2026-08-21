@@ -394,6 +394,10 @@
     <div class="field">
       <label for="f-org">Organisation</label>
       <select id="f-org" class="readonly-field"><option value="">— loading —</option></select>
+      <div id="add-org-row" style="display:none;gap:6px;margin-top:6px;">
+        <input id="new-org-input" type="text" placeholder="New organisation name" style="flex:1;" />
+        <button id="add-org-btn" type="button" class="btn" style="white-space:nowrap;">+ Add organisation</button>
+      </div>
     </div>
     <div class="field">
       <label for="f-site">Plant Site</label>
@@ -1031,6 +1035,7 @@
   async function setupOrgField(){
     if(!currentUser) return;
     if(currentUser.role === 'internal'){
+      elAddOrgRow.style.display = 'none';
       elOrg.classList.add('readonly-field');
       elOrg.disabled = true;
       const name = currentUser.organisation || '';
@@ -1043,6 +1048,7 @@
       const allowed = Array.isArray(currentUser.sites) ? currentUser.sites : [];
       populateSiteSelect(allowed, true);
     } else {
+      elAddOrgRow.style.display = 'flex';
       elOrg.classList.remove('readonly-field');
       elOrg.disabled = false;
       if(!orgDirectory.length) await loadOrganisations();
@@ -1078,6 +1084,28 @@
   });
 
   const elNewSiteInput = $('#new-site-input'), elAddSiteBtn = $('#add-site-btn');
+  const elAddOrgRow = $('#add-org-row'), elNewOrgInput = $('#new-org-input'), elAddOrgBtn = $('#add-org-btn');
+  elAddOrgBtn.addEventListener('click', async ()=>{
+    const name = elNewOrgInput.value.trim();
+    if(!name){ showStatus('Enter an organisation name first.', true); return; }
+    elAddOrgBtn.disabled = true;
+    try{
+      const body = await api('/api/orgs?resource=organisations', { method:'POST', body: JSON.stringify({ name }) });
+      elNewOrgInput.value = '';
+      await loadOrganisations();
+      elOrg.innerHTML = '<option value="">— select organisation —</option>' + orgDirectory.map(o=>`<option value="${o.id}">${escHtml(o.name)}</option>`).join('');
+      elOrg.value = String(body.organisation.id);
+      audit.meta.organisationId = body.organisation.id;
+      audit.meta.org = body.organisation.name;
+      elSite.innerHTML = '<option value="">— select site —</option>';
+      elSite.value = '';
+      audit.meta.site = '';
+      await refreshLoadSelect();
+      refreshAll();
+      showStatus('Organisation added.', false);
+    }catch(e){ showStatus('Could not add organisation: '+e.message, true); }
+    finally{ elAddOrgBtn.disabled = false; }
+  });
   elAddSiteBtn.addEventListener('click', async ()=>{
     const site = elNewSiteInput.value.trim();
     if(!site){ showStatus('Enter a site code first.', true); return; }
