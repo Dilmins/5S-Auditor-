@@ -1398,18 +1398,43 @@
   signupExternalOrgField.className = 'auth-field';
   signupExternalOrgField.id = 'signupExternalOrgField';
   signupExternalOrgField.style.display = 'none';
-  signupExternalOrgField.innerHTML = `<label>Add a new organisation (optional)</label>
+  signupExternalOrgField.innerHTML = `<label>Existing organisations &amp; sites</label>
+    <div id="signupExistingOrgsList" style="font-size:12px;color:var(--ink-soft);max-height:150px;overflow-y:auto;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fdfdfb;">Loading…</div>
+    <label style="margin-top:10px;display:block;">Add a new organisation (optional)</label>
     <input id="signupExternalOrgInput" placeholder="New organisation name — leave blank to skip" autocomplete="off" />
     <input id="signupExternalSitesInput" style="margin-top:6px;" placeholder="Starting site codes, e.g. HQ, PLANT1, PLANT2 (comma separated)" autocomplete="off" />`;
   signupSitesField.parentNode.insertBefore(signupExternalOrgField, signupSitesField);
   const signupExternalOrgInput = signupExternalOrgField.querySelector('#signupExternalOrgInput');
   const signupExternalSitesInput = signupExternalOrgField.querySelector('#signupExternalSitesInput');
+  const signupExistingOrgsList = signupExternalOrgField.querySelector('#signupExistingOrgsList');
+
+  // Senior Auditors get access to every organisation/site automatically (no
+  // picker needed), but they still need to actually see what already exists
+  // before deciding whether to add a new one — otherwise they have no way
+  // to know if their company/site is already in the system.
+  async function loadExistingOrgsSitesSummary(){
+    if(!signupOrgDirectory.length){ signupExistingOrgsList.textContent = 'No organisations added yet.'; return; }
+    signupExistingOrgsList.textContent = 'Loading…';
+    try{
+      const rows = await Promise.all(signupOrgDirectory.map(async o=>{
+        try{
+          const body = await api(`/api/orgs?resource=sites&organisation_id=${o.id}`);
+          const sites = body.sites || [];
+          return `<div style="margin-bottom:6px;"><strong style="color:var(--ink);">${escHtml(o.name)}</strong> — ${sites.length ? sites.map(escHtml).join(', ') : 'no sites yet'}</div>`;
+        }catch(_e){
+          return `<div style="margin-bottom:6px;"><strong style="color:var(--ink);">${escHtml(o.name)}</strong> — could not load sites</div>`;
+        }
+      }));
+      signupExistingOrgsList.innerHTML = rows.join('');
+    }catch(e){ signupExistingOrgsList.textContent = 'Could not load organisations.'; }
+  }
 
   let signupOrgDirectory = [];
   async function loadSignupOrgs(){
     try{ const body = await api('/api/orgs?resource=organisations'); signupOrgDirectory = body.organisations || []; }
     catch(e){ console.error(e); signupOrgDirectory = []; }
     signupOrgList.innerHTML = signupOrgDirectory.map(o=>`<option value="${escHtml(o.name)}"></option>`).join('');
+    await loadExistingOrgsSitesSummary();
   }
 
   function matchedSignupOrg(){
