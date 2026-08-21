@@ -455,10 +455,12 @@
       <div id="add-org-row" style="display:none;gap:6px;">
         <input id="new-org-input" type="text" placeholder="New organisation name" style="flex:1;" />
         <button id="add-org-btn" type="button" class="btn-ghost" style="white-space:nowrap;">+ Add organisation</button>
+        <button id="delete-org-btn" type="button" class="btn-danger" style="display:none;white-space:nowrap;">Delete organisation</button>
       </div>
       <div id="add-site-row" style="display:flex;gap:6px;">
         <input id="new-site-input" type="text" placeholder="New site code" style="flex:1;" />
         <button id="add-site-btn" type="button" class="btn-ghost" style="white-space:nowrap;">+ Add site</button>
+        <button id="delete-site-btn" type="button" class="btn-danger" style="display:none;white-space:nowrap;">Delete site</button>
       </div>
     </div>
     <div class="btnrow">
@@ -1100,6 +1102,7 @@
         elSite.value = '';
       }
     }
+    refreshDeleteButtonVisibility();
   }
 
   elOrg.addEventListener('change', async e=>{
@@ -1111,12 +1114,22 @@
     const sites = id ? await loadSitesForOrg(id) : [];
     populateSiteSelect(sites, false);
     audit.meta.site = '';
+    refreshDeleteButtonVisibility();
     await refreshLoadSelect();
     refreshAll();
   });
 
-  const elNewSiteInput = $('#new-site-input'), elAddSiteBtn = $('#add-site-btn');
-  const elAddOrgRow = $('#add-org-row'), elNewOrgInput = $('#new-org-input'), elAddOrgBtn = $('#add-org-btn');
+  const elNewSiteInput = $('#new-site-input'), elAddSiteBtn = $('#add-site-btn'), elDeleteSiteBtn = $('#delete-site-btn');
+  const elAddOrgRow = $('#add-org-row'), elNewOrgInput = $('#new-org-input'), elAddOrgBtn = $('#add-org-btn'), elDeleteOrgBtn = $('#delete-org-btn');
+
+  // Only Senior Auditors/Admins can delete orgs or sites, and only once one
+  // is actually selected (nothing to delete otherwise).
+  function refreshDeleteButtonVisibility(){
+    const canManage = currentUser?.role === 'external' || currentUser?.role === 'admin';
+    elDeleteOrgBtn.style.display = (canManage && audit.meta.organisationId) ? 'inline-flex' : 'none';
+    elDeleteSiteBtn.style.display = (canManage && audit.meta.site) ? 'inline-flex' : 'none';
+  }
+
   elAddOrgBtn.addEventListener('click', async ()=>{
     const name = elNewOrgInput.value.trim();
     if(!name){ showStatus('Enter an organisation name first.', true); return; }
@@ -1132,6 +1145,7 @@
       elSite.innerHTML = '<option value="">— select site —</option>';
       elSite.value = '';
       audit.meta.site = '';
+      refreshDeleteButtonVisibility();
       await refreshLoadSelect();
       refreshAll();
       showStatus('Organisation added.', false);
@@ -1156,6 +1170,7 @@
       populateSiteSelect(sites, false);
       elSite.value = site;
       audit.meta.site = site;
+      refreshDeleteButtonVisibility();
       await refreshLoadSelect();
       refreshAll();
       showStatus('Site added.', false);
@@ -1163,7 +1178,46 @@
     finally{ elAddSiteBtn.disabled = false; }
   });
 
-  elSite.addEventListener('change', async e=>{ audit.meta.site=e.target.value; await refreshLoadSelect(); refreshAll(); });
+  elDeleteOrgBtn.addEventListener('click', async ()=>{
+    if(!audit.meta.organisationId) return;
+    const orgName = audit.meta.org || 'this organisation';
+    if(!confirm(`Delete "${orgName}" and all of its sites? This cannot be undone. Organisations with saved audit history or assigned auditors can't be removed.`)) return;
+    elDeleteOrgBtn.disabled = true;
+    try{
+      await api(`/api/orgs?resource=organisations&organisation_id=${audit.meta.organisationId}`, { method:'DELETE' });
+      await loadOrganisations();
+      audit.meta.organisationId = null; audit.meta.org = ''; audit.meta.site = '';
+      elOrg.innerHTML = '<option value="">— select organisation —</option>' + orgDirectory.map(o=>`<option value="${o.id}">${escHtml(o.name)}</option>`).join('');
+      elOrg.value = '';
+      elSite.innerHTML = '<option value="">— select organisation first —</option>';
+      elSite.value = '';
+      refreshDeleteButtonVisibility();
+      await refreshLoadSelect();
+      refreshAll();
+      showStatus('Organisation deleted.', false);
+    }catch(e){ showStatus('Could not delete organisation: '+e.message, true); }
+    finally{ elDeleteOrgBtn.disabled = false; }
+  });
+
+  elDeleteSiteBtn.addEventListener('click', async ()=>{
+    if(!audit.meta.site || !audit.meta.organisationId) return;
+    const siteName = audit.meta.site;
+    if(!confirm(`Delete site "${siteName}"? This cannot be undone. Sites with saved audit history can't be removed.`)) return;
+    elDeleteSiteBtn.disabled = true;
+    try{
+      await api(`/api/orgs?resource=sites&organisation_id=${audit.meta.organisationId}&site=${encodeURIComponent(siteName)}`, { method:'DELETE' });
+      const sites = await loadSitesForOrg(audit.meta.organisationId);
+      populateSiteSelect(sites, false);
+      audit.meta.site = '';
+      refreshDeleteButtonVisibility();
+      await refreshLoadSelect();
+      refreshAll();
+      showStatus('Site deleted.', false);
+    }catch(e){ showStatus('Could not delete site: '+e.message, true); }
+    finally{ elDeleteSiteBtn.disabled = false; }
+  });
+
+  elSite.addEventListener('change', async e=>{ audit.meta.site=e.target.value; refreshDeleteButtonVisibility(); await refreshLoadSelect(); refreshAll(); });
 
   let auditorDirectory = [];
   async function refreshAuditorOptions(){
