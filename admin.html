@@ -35,7 +35,7 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}.wra
 <div class="msg" id="orgMsg"></div>
 </div>
 
-<div class="card"><h2>Create user</h2><form id="form"><div class="grid"><div class="field"><label>Username</label><input id="username" required></div><div class="field"><label>Full name</label><input id="fullName" required></div><div class="field"><label>Temporary / initial password</label><input id="password" type="password" minlength="8" required></div><div class="field"><label>Role</label><select id="role"><option value="internal">Internal Auditor</option><option value="external">External Auditor</option><option value="admin">Administrator</option></select></div><div class="field" id="orgField"><label>Organisation</label><select id="organisation"></select></div></div><div style="margin-top:14px" id="sitesBlock"><div class="muted" style="margin-bottom:6px">Assign site(s) — required for Internal Auditor. External Auditors and Administrators can access all sites.</div><div class="sites" id="sites"></div></div><div style="margin-top:14px"><button class="btn primary">Create account</button></div><div class="msg" id="msg"></div></form></div>
+<div class="card"><h2>Create user</h2><form id="form"><div class="grid"><div class="field"><label>Username</label><input id="username" required></div><div class="field"><label>Full name</label><input id="fullName" required></div><div class="field"><label>Temporary / initial password</label><input id="password" type="password" minlength="8" required></div><div class="field"><label>Role</label><select id="role"><option value="internal">Auditor</option><option value="external">Senior Auditor</option><option value="admin">Administrator</option></select></div><div class="field" id="orgField"><label>Organisation</label><select id="organisation"></select></div></div><div style="margin-top:14px" id="sitesBlock"><div class="muted" style="margin-bottom:6px">Assign site(s) — required for Auditor. Senior Auditors and Administrators can access all sites.</div><div class="sites" id="sites"></div></div><div style="margin-top:14px"><button class="btn primary">Create account</button></div><div class="msg" id="msg"></div></form></div>
 
 <div class="card"><h2>Existing users</h2><div id="users">Loading…</div></div>
 </div><script>
@@ -127,7 +127,8 @@ async function init(){
 
 async function refresh(){
   const b=await api('/api/users');
-  $('users').innerHTML=b.users.map(u=>`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · Sites: ${u.sites?.length?esc(u.sites.join(', ')):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><button class="btn danger" onclick="disableUser(${u.id},${u.is_active})">${u.is_active?'Disable':'Enable'}</button></div>`).join('')||'<div class="muted">No users.</div>';
+  const roleLabel={internal:'Auditor',external:'Senior Auditor',admin:'Administrator'};
+  $('users').innerHTML=b.users.map(u=>`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · Sites: ${u.sites?.length?esc(u.sites.join(', ')):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><button class="btn danger" onclick="disableUser(${u.id},${u.is_active})">${u.is_active?'Disable':'Enable'}</button></div>`).join('')||'<div class="muted">No users.</div>';
 }
 
 window.disableUser=async(id,active)=>{try{await api('/api/user?id='+id,{method:'PATCH',body:JSON.stringify({is_active:!active})});await refresh()}catch(e){alert(e.message)}};
