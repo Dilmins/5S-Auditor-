@@ -26,6 +26,21 @@ export default async function handler(req, res) {
         const rows = await sql`INSERT INTO five_s_organisations(name) VALUES(${name}) RETURNING id, name`;
         return json(res, 201, { organisation: rows[0] });
       }
+      if (req.method === 'DELETE') {
+        const user = await requireUser(req, res); if (!user) return;
+        if (!user || (user.role !== 'admin' && user.role !== 'external')) {
+          return json(res, 403, { error: 'Senior Auditor or administrator access required.' });
+        }
+        const organisationId = Number(req.query?.organisation_id);
+        if (!organisationId) return json(res, 400, { error: 'organisation_id is required.' });
+        const existingAudits = await sql`SELECT id FROM five_s_audits WHERE organisation_id=${organisationId} LIMIT 1`;
+        if (existingAudits.length) return json(res, 409, { error: 'This organisation has saved audit history and cannot be removed.' });
+        const assignedUsers = await sql`SELECT id FROM five_s_users WHERE organisation_id=${organisationId} LIMIT 1`;
+        if (assignedUsers.length) return json(res, 409, { error: 'This organisation still has auditors assigned to it. Reassign or deactivate them first.' });
+        await sql`DELETE FROM five_s_org_sites WHERE organisation_id=${organisationId}`;
+        await sql`DELETE FROM five_s_organisations WHERE id=${organisationId}`;
+        return json(res, 200, { ok: true });
+      }
       return json(res, 405, { error: 'Method not allowed.' });
     }
 
@@ -55,7 +70,9 @@ export default async function handler(req, res) {
       }
       if (req.method === 'DELETE') {
         const user = await requireUser(req, res); if (!user) return;
-        if (!requireAdmin(user, res)) return;
+        if (!user || (user.role !== 'admin' && user.role !== 'external')) {
+          return json(res, 403, { error: 'Senior Auditor or administrator access required.' });
+        }
         const organisationId = Number(req.query?.organisation_id);
         const site = req.query?.site || '';
         if (!organisationId || !site) return json(res, 400, { error: 'organisation_id and site are required.' });
