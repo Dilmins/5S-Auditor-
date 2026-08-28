@@ -157,7 +157,7 @@ async function renderOrgsCard(){
   const parts=await Promise.all(orgs.map(async o=>{
     const sites=await fetchOrgSites(o.id);
     return `<div class="org" data-org="${o.id}">
-      <div class="org-head"><b>${esc(o.name)}</b><span class="muted">${sites.length} site${sites.length===1?'':'s'}</span></div>
+      <div class="org-head"><b>${esc(o.name)}</b><span style="display:flex;align-items:center;gap:10px"><span class="muted">${sites.length} site${sites.length===1?'':'s'}</span><button class="btn danger deleteOrgBtn" data-org="${o.id}" data-name="${esc(o.name)}" type="button">Delete</button></span></div>
       <div class="org-sites">${sites.map(s=>`<span class="org-site-chip">${esc(s)}<button data-org="${o.id}" data-site="${esc(s)}" class="removeSiteBtn" type="button">&times;</button></span>`).join('')||'<span class="muted">No sites yet</span>'}</div>
       <div class="inline-add"><input placeholder="Add site code" class="newSiteInput" data-org="${o.id}"><button class="btn primary addSiteBtn" data-org="${o.id}" type="button">Add</button></div>
     </div>`;
@@ -174,6 +174,15 @@ async function renderOrgsCard(){
     const orgId=btn.dataset.org, site=btn.dataset.site;
     if(!confirm(`Remove site ${site}? Existing audits for this site keep their history, but auditors will no longer be able to select it.`))return;
     try{await api('/api/orgs?resource=sites&organisation_id='+orgId+'&site='+encodeURIComponent(site),{method:'DELETE'});delete orgSitesCache[orgId];await renderOrgsCard()}catch(e){alert(e.message)}
+  }));
+  document.querySelectorAll('.deleteOrgBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    const orgId=btn.dataset.org, name=btn.dataset.name;
+    if(!confirm(`Delete organisation "${name}"? This only works if it has no saved audits and no auditors assigned to it.`))return;
+    try{
+      await api('/api/orgs?resource=organisations&organisation_id='+orgId,{method:'DELETE'});
+      delete orgSitesCache[orgId];
+      await loadOrgs();
+    }catch(e){alert(e.message)}
   }));
 }
 
@@ -202,10 +211,15 @@ async function refresh(){
   const b=await api('/api/users');
   allUsers=b.users;
   const roleLabel={internal:'Auditor',external:'Senior Auditor',admin:'Administrator'};
-  $('users').innerHTML=allUsers.map(u=>`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · ${u.role==='internal'?(u.organisation?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><button class="btn danger" onclick="disableUser(${u.id},${u.is_active})">${u.is_active?'Disable':'Enable'}</button></div>`).join('')||'<div class="muted">No auditors registered yet.</div>';
+  $('users').innerHTML=allUsers.map(u=>`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · ${u.role==='internal'?(u.organisation?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" onclick="disableUser(${u.id},${u.is_active})">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" onclick="deleteUser(${u.id},'${esc(u.full_name).replace(/'/g,"\\'")}')">Delete</button></div></div>`).join('')||'<div class="muted">No auditors registered yet.</div>';
 }
 
 window.disableUser=async(id,active)=>{try{await api('/api/user?id='+id,{method:'PATCH',body:JSON.stringify({is_active:!active})});await refresh()}catch(e){alert(e.message)}};
+
+window.deleteUser=async(id,name)=>{
+  if(!confirm(`Permanently delete auditor "${name}"? This cannot be undone.`))return;
+  try{await api('/api/user?id='+id,{method:'DELETE'});await refresh()}catch(e){alert(e.message)}
+};
 
 $('form').addEventListener('submit',async e=>{
   e.preventDefault();
