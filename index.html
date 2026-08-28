@@ -1124,7 +1124,7 @@
     if(!currentUser) return;
     if(currentUser.role === 'internal'){
       elAddOrgRow.style.display = 'none';
-      const myOrgs = Array.isArray(currentUser.organisations) ? currentUser.organisations : [];
+      const myOrgs = (Array.isArray(currentUser.organisations) ? currentUser.organisations : []).filter(o => o && o.id != null && o.name);
       const allowedSites = Array.isArray(currentUser.sites) ? currentUser.sites : [];
       if(!myOrgs.length){
         elOrg.classList.add('readonly-field');
