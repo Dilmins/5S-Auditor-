@@ -14,9 +14,10 @@ export default async function handler(req, res) {
         ? await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits WHERE site=${site} ORDER BY audit_month DESC, updated_at DESC`
         : user.role === 'external' || user.role === 'admin'
           ? await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits ORDER BY audit_month DESC, updated_at DESC`
-          // Internal auditors: scope by their own org, not just their site list —
-          // otherwise two orgs reusing the same site code would leak into each other.
-          : await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits WHERE organisation_id=${user.organisation_id} AND site = ANY(${user.sites}) ORDER BY audit_month DESC, updated_at DESC`;
+          // Internal auditors: scope by their assigned organisations, not just
+          // their site list — otherwise two orgs reusing the same site code
+          // would leak into each other.
+          : await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits WHERE organisation_id = ANY(${user.organisation_ids}) AND site = ANY(${user.sites}) ORDER BY audit_month DESC, updated_at DESC`;
       return json(res, 200, { audits: rows });
     }
 
@@ -28,9 +29,13 @@ export default async function handler(req, res) {
 
       let organisationId;
       if (user.role === 'internal') {
-        // Never trust a client-sent org for internal auditors — always their own.
-        organisationId = user.organisation_id;
-        if (!organisationId) return json(res, 400, { error: 'Your account has no organisation assigned. Contact an admin.' });
+        // Trust only an organisation the auditor is actually assigned to.
+        const orgIds = (user.organisation_ids || []).map(Number);
+        if (!orgIds.length) return json(res, 400, { error: 'Your account has no organisation assigned. Contact an admin.' });
+        organisationId = Number(body.organisation_id || audit.meta?.organisationId);
+        if (!organisationId && orgIds.length === 1) organisationId = orgIds[0];
+        if (!organisationId || !orgIds.includes(organisationId))
+          return json(res, 403, { error: 'You are not assigned to that organisation.' });
       } else {
         organisationId = Number(body.organisation_id || audit.meta?.organisationId);
         if (!organisationId) return json(res, 400, { error: 'organisation_id is required.' });
