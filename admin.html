@@ -8,6 +8,7 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:12px;font-weight:700;color:#4b5563}
 .field input,.field select{padding:10px;border:1px solid #dde2d9;border-radius:7px;font-size:14px}
+.field select[multiple]{padding:4px}
 .sites{display:flex;flex-wrap:wrap;gap:8px}
 .sites label{border:1px solid #dde2d9;padding:7px 9px;border-radius:6px;font-size:12px}
 .btn{border:0;border-radius:7px;padding:10px 14px;font-weight:700;cursor:pointer}
@@ -131,11 +132,26 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
   </div>
 </div>
 
-<!-- ---------- Assign tab: tap an auditor under an org to (un)assign ---------- -->
+<!-- ---------- Assign tab: select an org, then manage its auditors ---------- -->
 <div class="workpanel" id="panel-assign">
-  <div class="card"><h2>Auditor assignment</h2>
-    <div class="muted" style="margin-bottom:14px">Tap an auditor's name under each organisation to assign or unassign them to that company. Assigning grants access to every site currently under that organisation.</div>
-    <div id="assignList">Loading…</div>
+  <div class="card"><h2>Assign auditors</h2>
+    <div class="muted" style="margin-bottom:10px">Select an organisation, then assign or unassign the auditors who audit it. Assigning grants access to every site currently under that organisation.</div>
+    <div class="field" style="max-width:340px">
+      <label>Organisation</label>
+      <select id="assignOrgSelect"><option value="">Loading…</option></select>
+    </div>
+  </div>
+
+  <div class="card" id="assignDetailCard" style="display:none">
+    <h2 style="margin:0 0 4px" id="assignOrgName"></h2>
+    <div class="muted" id="assignedCount" style="margin-bottom:10px"></div>
+    <div class="org-sites" id="assignedList"></div>
+
+    <div class="field" style="max-width:420px;margin-top:18px">
+      <label>Add auditors (hold Ctrl / Cmd to select more than one)</label>
+      <select id="addAuditorsSelect" multiple size="6"></select>
+    </div>
+    <div style="margin-top:10px"><button class="btn primary" id="addAuditorsBtn" type="button">Add selected</button></div>
   </div>
 </div>
 
@@ -151,7 +167,7 @@ document.querySelectorAll('.worktab[data-tab]').forEach(btn=>{
     document.querySelectorAll('.workpanel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     $('panel-'+btn.dataset.tab).classList.add('active');
-    if(btn.dataset.tab==='assign') renderAssignTab();
+    if(btn.dataset.tab==='assign') renderAssignOrgSelect();
   });
 });
 
@@ -160,11 +176,13 @@ let orgSitesCache={};     // id -> [site,...]
 let allUsers=[];          // cached from /api/users
 let selectedOrgId=null;
 let selectedUserId=null;
+let assignSelectedOrgId=null;
 
 async function loadOrgs(){
   const b=await api('/api/orgs?resource=organisations');
   orgs=b.organisations;
   renderOrgSelect();
+  renderAssignOrgSelect();
 }
 
 async function fetchOrgSites(id){
@@ -302,24 +320,24 @@ function renderUserDetail(){
   if(!selectedUserId){$('userDetail').innerHTML='';return}
   const u=allUsers.find(x=>x.id===selectedUserId);
   if(!u){$('userDetail').innerHTML='';return}
-  $('userDetail').innerHTML=`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · ${u.role==='internal'?(u.organisation?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" onclick="disableUser(${u.id},${u.is_active})">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" onclick="deleteUser(${u.id},'${esc(u.full_name).replace(/'/g,"\\'")}')">Delete</button></div></div>`;
+  $('userDetail').innerHTML=`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · ${u.role==='internal'?(u.organisation?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" id="toggleActiveBtn" type="button">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" id="deleteUserBtn" type="button">Delete</button></div></div>`;
+  $('toggleActiveBtn').addEventListener('click',async()=>{
+    try{await api('/api/user?id='+u.id,{method:'PATCH',body:JSON.stringify({is_active:!u.is_active})});await refresh()}catch(e){alert(e.message)}
+  });
+  $('deleteUserBtn').addEventListener('click',async()=>{
+    if(!confirm(`Permanently delete auditor "${u.full_name}"? This cannot be undone.`))return;
+    try{
+      selectedUserId=null;
+      await api('/api/user?id='+u.id,{method:'DELETE'});
+      await refresh();
+    }catch(e){alert(e.message)}
+  });
 }
 
 $('userSelect').addEventListener('change',()=>{
   selectedUserId=Number($('userSelect').value)||null;
   renderUserDetail();
 });
-
-window.disableUser=async(id,active)=>{try{await api('/api/user?id='+id,{method:'PATCH',body:JSON.stringify({is_active:!active})});await refresh()}catch(e){alert(e.message)}};
-
-window.deleteUser=async(id,name)=>{
-  if(!confirm(`Permanently delete auditor "${name}"? This cannot be undone.`))return;
-  try{
-    selectedUserId=null;
-    await api('/api/user?id='+id,{method:'DELETE'});
-    await refresh();
-  }catch(e){alert(e.message)}
-};
 
 $('form').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -334,51 +352,74 @@ $('form').addEventListener('submit',async e=>{
 });
 
 // ---------- Assign tab ----------
-async function renderAssignTab(){
-  if(!orgs.length){$('assignList').innerHTML='<div class="muted">Add an organisation on the Company tab first.</div>';return}
+function renderAssignOrgSelect(){
+  const sel=$('assignOrgSelect');
+  if(!orgs.length){
+    sel.innerHTML='<option value="">No organisations yet</option>';
+    assignSelectedOrgId=null;
+    $('assignDetailCard').style.display='none';
+    return;
+  }
+  sel.innerHTML='<option value="">Select organisation…</option>'+orgs.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
+  if(assignSelectedOrgId && orgs.some(o=>o.id===assignSelectedOrgId)){
+    sel.value=assignSelectedOrgId;
+    renderAssignedList();
+  }else{
+    assignSelectedOrgId=null;
+    $('assignDetailCard').style.display='none';
+  }
+}
+
+$('assignOrgSelect').addEventListener('change',()=>{
+  assignSelectedOrgId=Number($('assignOrgSelect').value)||null;
+  if(!assignSelectedOrgId){$('assignDetailCard').style.display='none';return}
+  renderAssignedList();
+});
+
+function renderAssignedList(){
+  const org=orgs.find(o=>o.id===assignSelectedOrgId);
+  if(!org){$('assignDetailCard').style.display='none';return}
   const auditors=allUsers.filter(u=>u.role==='internal');
-  if(!auditors.length){$('assignList').innerHTML='<div class="muted">Register an auditor on the Auditor tab first.</div>';return}
-  $('assignList').innerHTML=orgs.map(o=>{
-    const assigned=auditors.filter(u=>Number(u.organisation_id)===o.id);
-    const unassigned=auditors.filter(u=>Number(u.organisation_id)!==o.id && u.is_active);
-    return `<div class="assign-org">
-      <h4>${esc(o.name)}</h4>
-      <div class="muted" style="margin-bottom:10px">${assigned.length} auditor${assigned.length===1?'':'s'} assigned</div>
-      <div style="display:flex;gap:8px;align-items:end;margin-bottom:12px">
-        <div class="field" style="flex:1"><label>Add auditor</label><select class="addAuditorSelect" data-org="${o.id}"><option value="">${unassigned.length?'Select auditor…':'No auditors available'}</option>${unassigned.map(u=>`<option value="${u.id}">${esc(u.full_name)}</option>`).join('')}</select></div>
-        <button class="btn primary addAuditorBtn" data-org="${o.id}" type="button" ${unassigned.length?'':'disabled'}>Add</button>
-      </div>
-      <div style="display:flex;gap:8px;align-items:end">
-        <div class="field" style="flex:1"><label>Remove auditor</label><select class="removeAuditorSelect" data-org="${o.id}"><option value="">${assigned.length?'Select auditor…':'None assigned'}</option>${assigned.map(u=>`<option value="${u.id}">${esc(u.full_name)}</option>`).join('')}</select></div>
-        <button class="btn danger removeAuditorBtn" data-org="${o.id}" type="button" ${assigned.length?'':'disabled'}>Remove</button>
-      </div>
-    </div>`;
-  }).join('');
-  document.querySelectorAll('.addAuditorBtn').forEach(btn=>btn.addEventListener('click',async()=>{
-    const orgId=Number(btn.dataset.org);
-    const sel=document.querySelector(`.addAuditorSelect[data-org="${orgId}"]`);
-    const userId=Number(sel.value);
-    if(!userId)return;
-    btn.disabled=true;
-    try{
-      await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:orgId})});
-      await refresh();
-      await renderAssignTab();
-    }catch(e){alert(e.message);btn.disabled=false}
-  }));
+  const assigned=auditors.filter(u=>Number(u.organisation_id)===org.id);
+  const available=auditors.filter(u=>Number(u.organisation_id)!==org.id && u.is_active);
+
+  $('assignOrgName').textContent=org.name;
+  $('assignedCount').textContent=`${assigned.length} auditor${assigned.length===1?'':'s'} assigned`;
+  $('assignedList').innerHTML=assigned.length
+    ?assigned.map(u=>`<span class="org-site-chip">${esc(u.full_name)}<button data-user="${u.id}" class="removeAuditorBtn" type="button">&times;</button></span>`).join('')
+    :'<span class="muted">No auditors assigned yet.</span>';
+  $('addAuditorsSelect').innerHTML=available.length
+    ?available.map(u=>`<option value="${u.id}">${esc(u.full_name)}</option>`).join('')
+    :'<option disabled>No auditors available to add</option>';
+
   document.querySelectorAll('.removeAuditorBtn').forEach(btn=>btn.addEventListener('click',async()=>{
-    const orgId=Number(btn.dataset.org);
-    const sel=document.querySelector(`.removeAuditorSelect[data-org="${orgId}"]`);
-    const userId=Number(sel.value);
-    if(!userId)return;
-    btn.disabled=true;
+    const userId=Number(btn.dataset.user);
+    if(!confirm('Unassign this auditor from the organisation?'))return;
     try{
       await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:null})});
       await refresh();
-      await renderAssignTab();
-    }catch(e){alert(e.message);btn.disabled=false}
+      renderAssignedList();
+    }catch(e){alert(e.message)}
   }));
+
+  $('assignDetailCard').style.display='block';
 }
+
+$('addAuditorsBtn').addEventListener('click',async()=>{
+  if(!assignSelectedOrgId)return;
+  const sel=$('addAuditorsSelect');
+  const ids=[...sel.selectedOptions].map(o=>Number(o.value)).filter(Boolean);
+  if(!ids.length)return;
+  $('addAuditorsBtn').disabled=true;
+  try{
+    for(const userId of ids){
+      await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:assignSelectedOrgId})});
+    }
+    await refresh();
+    renderAssignedList();
+  }catch(e){alert(e.message)}
+  $('addAuditorsBtn').disabled=false;
+});
 
 init();
 </script></body></html>
