@@ -22,10 +22,12 @@ export default async function handler(req, res) {
       const b = await readBody(req);
       if (!b.username || !b.full_name || !b.password || !['internal', 'external', 'admin'].includes(b.role))
         return json(res, 400, { error: 'username, full_name, password and role are required.' });
+      // organisation_id is optional at creation time now: internal auditors
+      // can be registered first and assigned to an organisation afterwards
+      // from the Assign tab. If one is provided up front, validate it.
       let organisationId = null;
-      if (b.role === 'internal') {
+      if (b.role === 'internal' && b.organisation_id) {
         organisationId = Number(b.organisation_id);
-        if (!organisationId) return json(res, 400, { error: 'organisation_id is required for internal auditors.' });
         const orgExists = await sql`SELECT id FROM five_s_organisations WHERE id=${organisationId} LIMIT 1`;
         if (!orgExists.length) return json(res, 400, { error: 'Unknown organisation.' });
       }
