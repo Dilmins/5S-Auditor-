@@ -431,12 +431,12 @@
       <label for="f-month">Audit month</label>
       <input id="f-month" type="month" />
     </div>
-    <div class="field">
+    <div class="field" style="display:none;">
       <label for="f-auditor">Auditor</label>
       <select id="f-auditor"><option value="">— select auditor —</option></select>
       <input id="f-auditor-other" type="text" placeholder="Enter auditor name" style="display:none;margin-top:6px;" />
     </div>
-    <div class="field" style="grid-column:span 2;min-width:245px;">
+    <div class="field" style="display:none;grid-column:span 2;min-width:245px;">
       <label>Auditor Type</label>
       <div class="auditor-type">
         <label><input type="radio" name="auditorType" id="auditorInternal" value="internal" disabled> Auditor</label>
@@ -447,7 +447,7 @@
       <label for="loadSelect">Load saved audit</label>
       <select id="loadSelect"><option value="">— select record —</option></select>
     </div>
-    <div class="metabar-extra" id="metabarExtra">
+    <div class="metabar-extra" id="metabarExtra" style="display:none;">
       <div id="add-org-row" style="display:none;gap:6px;">
         <input id="new-org-input" type="text" placeholder="New organisation name" style="flex:1;" />
         <button id="add-org-btn" type="button" class="btn-ghost" style="white-space:nowrap;">+ Add organisation</button>
