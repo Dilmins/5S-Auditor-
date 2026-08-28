@@ -144,7 +144,6 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
   </div>
   <div class="card"><h2>Registered Users</h2>
     <div class="field" style="max-width:340px">
-      <label>Select user</label>
       <select id="userSelect"><option value="">Loading…</option></select>
     </div>
     <div id="userDetail" style="margin-top:14px"></div>
@@ -359,7 +358,7 @@ function renderUserSelect(){
     $('userDetail').innerHTML='';
     return;
   }
-  sel.innerHTML='<option value="">Select auditor…</option>'+allUsers.map(u=>`<option value="${u.id}">${esc(u.full_name)} (@${esc(u.username)})</option>`).join('');
+  sel.innerHTML='<option value="">Select user…</option>'+allUsers.map(u=>`<option value="${u.id}">${esc(u.full_name)} (@${esc(u.username)})</option>`).join('');
   if(selectedUserId && allUsers.some(u=>Number(u.id)===selectedUserId)){
     sel.value=selectedUserId;
   }else{
