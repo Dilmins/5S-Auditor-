@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         if (!organisationId) return json(res, 400, { error: 'organisation_id is required.' });
         const existingAudits = await sql`SELECT id FROM five_s_audits WHERE organisation_id=${organisationId} LIMIT 1`;
         if (existingAudits.length) return json(res, 409, { error: 'This organisation has saved audit history and cannot be removed.' });
-        const assignedUsers = await sql`SELECT id FROM five_s_users WHERE organisation_id=${organisationId} LIMIT 1`;
+        const assignedUsers = await sql`SELECT user_id FROM five_s_user_organisations WHERE organisation_id=${organisationId} LIMIT 1`;
         if (assignedUsers.length) return json(res, 409, { error: 'This organisation still has auditors assigned to it. Reassign or deactivate them first.' });
         await sql`DELETE FROM five_s_org_sites WHERE organisation_id=${organisationId}`;
         await sql`DELETE FROM five_s_organisations WHERE id=${organisationId}`;
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
         // Internal auditors are gated by their own five_s_user_sites list (see
         // canAccessSite), which is separate from the org's site list — so
         // self-assign the site they just added or they couldn't use it.
-        if (user.role === 'internal' && Number(user.organisation_id) === organisationId) {
+        if (user.role === 'internal' && Array.isArray(user.organisation_ids) && user.organisation_ids.map(Number).includes(organisationId)) {
           await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${user.id}, ${site}) ON CONFLICT DO NOTHING`;
         }
         return json(res, 201, { ok: true });
