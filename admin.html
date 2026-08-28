@@ -108,8 +108,8 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
     <div class="msg" id="siteMsg" style="max-width:340px"></div>
   </div>
 
-  <div style="display:flex;justify-content:flex-end;margin-top:4px">
-    <button class="btn primary" type="button" data-nav="auditor">Next: Auditor →</button>
+  <div style="display:flex;justify-content:flex-end;margin-top:4px" id="companyNextWrap">
+    <button class="btn primary" type="button" data-nav="auditor" id="companyNextBtn" style="display:none">Next: Auditor →</button>
   </div>
 </div>
 
@@ -143,7 +143,7 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
       <div class="msg" id="msg"></div>
     </form>
   </div>
-  <div class="card"><h2>Registered auditors</h2>
+  <div class="card"><h2>Registered Users</h2>
     <div class="field" style="max-width:340px">
       <label>Select auditor</label>
       <select id="userSelect"><option value="">Loading…</option></select>
@@ -242,9 +242,11 @@ function renderOrgSelect(){
     sel.innerHTML='<option value="">No organisations yet</option>';
     selectedOrgId=null;
     $('sitesCard').style.display='none';
+    $('companyNextBtn').style.display='none';
     return;
   }
   sel.innerHTML='<option value="">Select organisation…</option>'+orgs.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
+  $('companyNextBtn').style.display='inline-block';
   if(selectedOrgId && orgs.some(o=>o.id===selectedOrgId)){
     sel.value=selectedOrgId;
     renderSitesCard();
@@ -412,8 +414,9 @@ $('form').addEventListener('submit',async e=>{
   $('msg').style.color='#b5533c';
   $('msg').textContent='Creating…';
   try{
-    await api('/api/users',{method:'POST',body:JSON.stringify({username:$('username').value,full_name:$('fullName').value,password:$('password').value,role,organisation_id:null,sites:[]})});
+    const r=await api('/api/users',{method:'POST',body:JSON.stringify({username:$('username').value,full_name:$('fullName').value,password:$('password').value,role,organisation_id:null,sites:[]})});
     $('form').reset();
+    selectedUserId=r.user?.id ?? selectedUserId;
     await refresh();
     $('msg').style.color='#2f7a52';
     $('msg').textContent='Auditor successfully added.';
@@ -446,11 +449,12 @@ $('assignOrgSelect').addEventListener('change',()=>{
 });
 
 function renderAssignedList(){
-  const org=orgs.find(o=>o.id===assignSelectedOrgId);
+  const org=orgs.find(o=>Number(o.id)===assignSelectedOrgId);
   if(!org){$('assignDetailCard').style.display='none';return}
+  const orgId=Number(org.id);
   const auditors=allUsers.filter(u=>u.role==='internal');
-  const assigned=auditors.filter(u=>Number(u.organisation_id)===org.id);
-  const available=auditors.filter(u=>Number(u.organisation_id)!==org.id && u.is_active);
+  const assigned=auditors.filter(u=>Number(u.organisation_id)===orgId);
+  const available=auditors.filter(u=>Number(u.organisation_id)!==orgId && u.is_active);
 
   $('assignOrgName').textContent=org.name;
   $('assignedCount').textContent=`${assigned.length} auditor${assigned.length===1?'':'s'} assigned`;
