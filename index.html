@@ -172,6 +172,7 @@
   .breakdown .brow b{color:var(--ink); font-weight:600;}
   .breakdown .bartrack{height:5px; background:#EDEFE9; border-radius:3px; margin-top:2px; overflow:hidden;}
   .breakdown .barfill{height:100%; background:var(--green); border-radius:3px;}
+  .gauge-current-section{display:none;}
 
   .maincol{flex:1; min-width:340px; display:flex; flex-direction:column; gap:14px;}
 
@@ -305,6 +306,17 @@
     .gauge-max{margin-top:0;}
     .gauge-band{margin-top:0;}
     .breakdown{display:none;}
+    .gauge-current-section{
+      display:none; align-items:baseline; gap:6px; font-size:12px; color:var(--ink-soft);
+      max-width:48%; overflow:hidden;
+    }
+    .gauge-current-section.show{display:flex;}
+    .gauge-current-section .gcs-num{
+      font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--green-deep);
+      background:#E4EFE7; padding:1px 6px; border-radius:5px; flex-shrink:0;
+    }
+    .gauge-current-section .gcs-title{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .gauge-current-section .gcs-score{font-weight:700; color:var(--ink); flex-shrink:0;}
     .maincol{order:1; min-width:0;}
   }
 
@@ -487,6 +499,7 @@
         <div class="gauge-band" id="gaugeBand">—</div>
       </div>
       <div class="breakdown" id="breakdown"></div>
+      <div class="gauge-current-section" id="gaugeCurrentSection" style="display:none;"></div>
     </div>
 
     <div class="maincol" id="sectionsWrap"></div>
@@ -811,6 +824,25 @@
   const gaugeBand = $('#gaugeBand');
   const gaugeSvg = $('#gaugeSvg');
   const breakdownEl = $('#breakdown');
+  const gaugeCurrentSectionEl = $('#gaugeCurrentSection');
+
+  // Mobile sticky top bar can't fit the full breakdown list, so instead it
+  // shows only whichever section the user currently has expanded.
+  function updateActiveSectionBadge(){
+    if(!gaugeCurrentSectionEl) return;
+    const openCard = sectionsWrap && sectionsWrap.querySelector('.section.open');
+    if(!openCard){ gaugeCurrentSectionEl.classList.remove('show'); return; }
+    let num, title, total, max;
+    if(openCard.id === 'q14card'){
+      num = '14'; title = 'Other Japanese Management Practices'; total = q14Total(); max = Q14_MAX;
+    }else{
+      const section = SECTIONS.find(s=>s.id===openCard.dataset.sec);
+      if(!section){ gaugeCurrentSectionEl.classList.remove('show'); return; }
+      num = section.num; title = section.title; total = sectionTotal(section); max = section.max;
+    }
+    gaugeCurrentSectionEl.innerHTML = `<span class="gcs-num">${num}</span><span class="gcs-title">${escHtml(title)}</span><span class="gcs-score">${total}/${max}</span>`;
+    gaugeCurrentSectionEl.classList.add('show');
+  }
 
   SITES.forEach(s=>{
     const opt = document.createElement('option');
@@ -843,6 +875,7 @@
         card.classList.toggle('open');
         const body = card.querySelector('.section-body');
         body.style.maxHeight = card.classList.contains('open') ? body.scrollHeight+400+'px' : '0px';
+        updateActiveSectionBadge();
       });
       const body = document.createElement('div'); body.className='section-body';
       const inner = document.createElement('div'); inner.className='section-body-inner';
@@ -892,6 +925,7 @@
         p.classList.toggle('selected', audit.scores[key]===v);
       });
     });
+    updateActiveSectionBadge();
   }
 
   function q14Total(){ return Q14.reduce((a,q)=> a + (audit.q14.score[q.id]||0), 0); }
@@ -906,6 +940,7 @@
       card.classList.toggle('open');
       const body = card.querySelector('.section-body');
       body.style.maxHeight = card.classList.contains('open') ? body.scrollHeight+400+'px' : '0px';
+      updateActiveSectionBadge();
     });
     const body = document.createElement('div'); body.className='section-body';
     const inner = document.createElement('div'); inner.className='q14';
@@ -931,7 +966,7 @@
     return card;
   }
 
-  function refreshQ14Total(){ const t = document.getElementById('q14total'); if(t) t.textContent = `${q14Total()} / ${Q14_MAX}`; }
+  function refreshQ14Total(){ const t = document.getElementById('q14total'); if(t) t.textContent = `${q14Total()} / ${Q14_MAX}`; updateActiveSectionBadge(); }
 
   function renderBottom(){
     bottomWrap.innerHTML='';
