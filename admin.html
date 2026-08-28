@@ -173,12 +173,12 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
     <div class="muted" id="assignedCount" style="margin-bottom:10px"></div>
     <div class="org-sites" id="assignedList"></div>
 
-    <div class="field" style="max-width:420px;margin-top:18px">
-      <label>Add auditors</label>
-      <select id="addAuditorsSelect" multiple size="6"></select>
+    <div class="field" style="max-width:340px;margin-top:18px">
+      <label>Add auditor</label>
+      <select id="addAuditorsSelect"></select>
     </div>
-    <div style="margin-top:10px"><button class="btn primary" id="addAuditorsBtn" type="button">Add selected</button></div>
-    <div class="msg" id="assignMsg" style="max-width:420px"></div>
+    <div style="margin-top:10px"><button class="btn primary" id="addAuditorsBtn" type="button">Add</button></div>
+    <div class="msg" id="assignMsg" style="max-width:340px"></div>
   </div>
 
   <div style="display:flex;justify-content:flex-start;margin-top:4px">
@@ -462,8 +462,8 @@ function renderAssignedList(){
     ?assigned.map(u=>`<span class="org-site-chip">${esc(u.full_name)}<button data-user="${u.id}" class="removeAuditorBtn" type="button">&times;</button></span>`).join('')
     :'<span class="muted">No auditors assigned yet.</span>';
   $('addAuditorsSelect').innerHTML=available.length
-    ?available.map(u=>`<option value="${u.id}">${esc(u.full_name)}</option>`).join('')
-    :'<option disabled>No auditors available to add</option>';
+    ?'<option value="">Select auditor…</option>'+available.map(u=>`<option value="${u.id}">${esc(u.full_name)} (@${esc(u.username)})</option>`).join('')
+    :'<option value="">No auditors available to add</option>';
   $('assignMsg').textContent='';
 
   document.querySelectorAll('.removeAuditorBtn').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -484,17 +484,15 @@ function renderAssignedList(){
 $('addAuditorsBtn').addEventListener('click',async()=>{
   if(!assignSelectedOrgId)return;
   const sel=$('addAuditorsSelect');
-  const ids=[...sel.selectedOptions].map(o=>Number(o.value)).filter(Boolean);
-  if(!ids.length)return;
+  const userId=Number(sel.value);
+  if(!userId){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent='Select an auditor to add.';return}
   $('addAuditorsBtn').disabled=true;
   try{
-    for(const userId of ids){
-      await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:assignSelectedOrgId})});
-    }
+    await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:assignSelectedOrgId})});
     await refresh();
     renderAssignedList();
     $('assignMsg').style.color='#2f7a52';
-    $('assignMsg').textContent=ids.length===1?'Auditor successfully assigned.':'Auditors successfully assigned.';
+    $('assignMsg').textContent='Auditor successfully assigned.';
   }catch(e){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
   $('addAuditorsBtn').disabled=false;
 });
