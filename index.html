@@ -1124,17 +1124,48 @@
     if(!currentUser) return;
     if(currentUser.role === 'internal'){
       elAddOrgRow.style.display = 'none';
-      elOrg.classList.add('readonly-field');
-      elOrg.disabled = true;
-      const name = currentUser.organisation || '';
-      elOrg.innerHTML = name ? `<option value="${escHtml(name)}">${escHtml(name)}</option>` : '<option value="">No organisation assigned — contact admin</option>';
-      elOrg.value = name;
-      audit.meta.org = name;
-      audit.meta.organisationId = currentUser.organisation_id || null;
-      // Internal auditors' site choices are their own assigned sites (a subset
-      // of the org's full site list), not the full org site list.
-      const allowed = Array.isArray(currentUser.sites) ? currentUser.sites : [];
-      populateSiteSelect(allowed, true);
+      const myOrgs = Array.isArray(currentUser.organisations) ? currentUser.organisations : [];
+      const allowedSites = Array.isArray(currentUser.sites) ? currentUser.sites : [];
+      if(!myOrgs.length){
+        elOrg.classList.add('readonly-field');
+        elOrg.disabled = true;
+        elOrg.innerHTML = '<option value="">No organisation assigned — contact admin</option>';
+        elOrg.value = '';
+        audit.meta.org = ''; audit.meta.organisationId = null;
+        populateSiteSelect([], true);
+      } else if(myOrgs.length === 1){
+        // Only one org: keep it locked, same as before.
+        elOrg.classList.add('readonly-field');
+        elOrg.disabled = true;
+        elOrg.innerHTML = `<option value="${myOrgs[0].id}">${escHtml(myOrgs[0].name)}</option>`;
+        elOrg.value = String(myOrgs[0].id);
+        audit.meta.org = myOrgs[0].name;
+        audit.meta.organisationId = myOrgs[0].id;
+        // Internal auditors' site choices are their own assigned sites (a
+        // subset of the org's full site list), not the full org site list.
+        populateSiteSelect(allowedSites, true);
+      } else {
+        // Assigned to more than one org: let them pick which one this audit
+        // belongs to, restricted to their own organisations only.
+        elOrg.classList.remove('readonly-field');
+        elOrg.disabled = false;
+        elOrg.innerHTML = '<option value="">— select organisation —</option>' + myOrgs.map(o=>`<option value="${o.id}">${escHtml(o.name)}</option>`).join('');
+        const keep = audit.meta.organisationId && myOrgs.some(o=>Number(o.id)===Number(audit.meta.organisationId));
+        if(keep){
+          elOrg.value = String(audit.meta.organisationId);
+        } else {
+          elOrg.value = ''; audit.meta.organisationId = null; audit.meta.org = '';
+        }
+        if(audit.meta.organisationId){
+          // Site choices for internal auditors are always their own assigned
+          // sites, intersected with the selected org's real site list.
+          const orgSites = await loadSitesForOrg(audit.meta.organisationId);
+          populateSiteSelect(allowedSites.filter(s=>orgSites.includes(s)), true);
+        } else {
+          elSite.innerHTML = '<option value="">— select organisation first —</option>';
+          elSite.value = '';
+        }
+      }
     } else {
       elAddOrgRow.style.display = 'flex';
       elOrg.classList.remove('readonly-field');
@@ -1160,12 +1191,18 @@
   }
 
   elOrg.addEventListener('change', async e=>{
-    if(currentUser?.role === 'internal') return; // locked
+    const isInternal = currentUser?.role === 'internal';
+    if(isInternal && (!Array.isArray(currentUser.organisations) || currentUser.organisations.length <= 1)) return; // locked to their single org
     const id = e.target.value ? Number(e.target.value) : null;
-    const found = orgDirectory.find(o=>o.id===id);
+    const directory = isInternal ? (currentUser.organisations || []) : orgDirectory;
+    const found = directory.find(o=>Number(o.id)===id);
     audit.meta.organisationId = id;
     audit.meta.org = found ? found.name : '';
-    const sites = id ? await loadSitesForOrg(id) : [];
+    let sites = id ? await loadSitesForOrg(id) : [];
+    if(isInternal){
+      const allowedSites = Array.isArray(currentUser.sites) ? currentUser.sites : [];
+      sites = sites.filter(s=>allowedSites.includes(s));
+    }
     populateSiteSelect(sites, false);
     audit.meta.site = '';
     refreshDeleteButtonVisibility();
@@ -1388,10 +1425,9 @@
         specialNote:data.special_note||'', signature:data.signature||{dataUrl:'',signedAt:null}, savedAt:data.saved_at||data.updated_at||null
       };
       if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
-      // For internal auditors the org is always their own, regardless of what was
-      // saved on the record (should always match anyway, since they can only
-      // load their own org's audits — see audit.js).
-      if(currentUser.role === 'internal'){ audit.meta.org = currentUser.organisation || audit.meta.org; audit.meta.organisationId = currentUser.organisation_id || audit.meta.organisationId; }
+      // Internal auditors can only ever load a record from one of their own
+      // organisations (see audit.js), so the org on the saved record is
+      // already trustworthy — no need to override it here.
       fullRender(); await setupOrgField(); applyUserAccess(); await refreshAuditorOptions();
       if(audit.meta.auditorType==='external'){ auditorExternal.checked=true; auditorInternal.checked=false; }
       else if(audit.meta.auditorType==='internal'){ auditorInternal.checked=true; auditorExternal.checked=false; }
@@ -1405,7 +1441,7 @@
 
   async function saveAudit(){
     if(!currentUser){ showStatus('Please sign in first.',true); return; }
-    if(currentUser.role !== 'internal' && !audit.meta.organisationId){ showStatus('Please select an organisation before saving.',true); elOrg.focus(); return; }
+    if(!audit.meta.organisationId){ showStatus('Please select an organisation before saving.',true); elOrg.focus(); return; }
     if(!audit.meta.site){ showStatus('Please select a plant site before saving.',true); elSite.focus(); return; }
     if(!audit.meta.month){ showStatus('Please choose an audit month before saving.',true); return; }
     applyAuditorSelection();
@@ -1419,7 +1455,6 @@
     if(!audit.signature || !audit.signature.dataUrl){ showStatus('Please provide the auditor e-signature before saving the final audit.',true); document.getElementById('signatureCanvas')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
     const overallTotal = SECTIONS.reduce((a,s)=>a+sectionTotal(s),0) + q14Total();
     audit.savedAt = new Date().toISOString();
-    if(currentUser.role === 'internal'){ audit.meta.org = currentUser.organisation || audit.meta.org; audit.meta.organisationId = currentUser.organisation_id || audit.meta.organisationId; }
     if(!audit.meta.auditor){ audit.meta.auditor=currentUser.full_name; audit.meta.auditorType=currentUser.role==='external'?'external':'internal'; }
     try{
       const body=await api('/api/audits',{method:'POST',body:JSON.stringify({
