@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     // Internal auditors can only ever pull a record from their own org — even
     // if another org happens to reuse the same site code + month.
     const rows = user.role === 'internal'
-      ? await sql`SELECT * FROM five_s_audits WHERE site=${site} AND audit_month=${month} AND organisation_id=${user.organisation_id} LIMIT 1`
+      ? await sql`SELECT * FROM five_s_audits WHERE site=${site} AND audit_month=${month} AND organisation_id = ANY(${user.organisation_ids}) LIMIT 1`
       : await sql`SELECT * FROM five_s_audits WHERE site=${site} AND audit_month=${month} LIMIT 1`;
     if (!rows.length) return json(res, 404, { error: 'No saved audit found for this site/month.' });
     return json(res, 200, { audit: rows[0] });
