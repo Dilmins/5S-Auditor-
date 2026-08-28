@@ -361,7 +361,7 @@ function renderUserSelect(){
     return;
   }
   sel.innerHTML='<option value="">Select auditor…</option>'+allUsers.map(u=>`<option value="${u.id}">${esc(u.full_name)} (@${esc(u.username)})</option>`).join('');
-  if(selectedUserId && allUsers.some(u=>u.id===selectedUserId)){
+  if(selectedUserId && allUsers.some(u=>Number(u.id)===selectedUserId)){
     sel.value=selectedUserId;
   }else{
     selectedUserId=null;
@@ -371,7 +371,7 @@ function renderUserSelect(){
 
 function renderUserDetail(){
   if(!selectedUserId){$('userDetail').innerHTML='';return}
-  const u=allUsers.find(x=>x.id===selectedUserId);
+  const u=allUsers.find(x=>Number(x.id)===selectedUserId);
   if(!u){$('userDetail').innerHTML='';return}
   $('userDetail').innerHTML=`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · ${u.role==='internal'?(u.organisation?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" data-action="toggle" data-id="${u.id}" data-active="${u.is_active?'1':'0'}" type="button">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" data-action="delete" data-id="${u.id}" data-name="${esc(u.full_name)}" type="button">Delete</button></div></div>`;
 }
@@ -416,7 +416,7 @@ $('form').addEventListener('submit',async e=>{
   try{
     const r=await api('/api/users',{method:'POST',body:JSON.stringify({username:$('username').value,full_name:$('fullName').value,password:$('password').value,role,organisation_id:null,sites:[]})});
     $('form').reset();
-    selectedUserId=r.user?.id ?? selectedUserId;
+    selectedUserId=r.user?.id!=null ? Number(r.user.id) : selectedUserId;
     await refresh();
     $('msg').style.color='#2f7a52';
     $('msg').textContent='Auditor successfully added.';
