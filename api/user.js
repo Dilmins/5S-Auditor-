@@ -13,13 +13,25 @@ export default async function handler(req, res) {
       if (b.role && ['internal', 'external', 'admin'].includes(b.role)) await sql`UPDATE five_s_users SET role=${b.role} WHERE id=${id}`;
       if (typeof b.is_active === 'boolean') await sql`UPDATE five_s_users SET is_active=${b.is_active} WHERE id=${id}`;
       if ('organisation_id' in b) {
-        // null clears it (e.g. converting internal -> external); a number reassigns the org.
+        // null clears it (e.g. converting internal -> external, or unassigning
+        // from the Assign tab); a number reassigns the org.
         const organisationId = b.organisation_id === null ? null : Number(b.organisation_id);
         if (organisationId !== null) {
           const orgExists = await sql`SELECT id FROM five_s_organisations WHERE id=${organisationId} LIMIT 1`;
           if (!orgExists.length) return json(res, 400, { error: 'Unknown organisation.' });
         }
         await sql`UPDATE five_s_users SET organisation_id=${organisationId} WHERE id=${id}`;
+        // Auto-sync site access to the new organisation's current site list,
+        // unless the caller is explicitly managing sites itself in this same
+        // request (b.sites below). This is what lets the Assign tab grant
+        // access with a single tap, no separate site picker required.
+        if (!Array.isArray(b.sites)) {
+          await sql`DELETE FROM five_s_user_sites WHERE user_id=${id}`;
+          if (organisationId !== null) {
+            const orgSites = await sql`SELECT site FROM five_s_org_sites WHERE organisation_id=${organisationId}`;
+            for (const r of orgSites) await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${id}, ${r.site}) ON CONFLICT DO NOTHING`;
+          }
+        }
       }
       if (Array.isArray(b.sites)) {
         await sql`DELETE FROM five_s_user_sites WHERE user_id=${id}`;
