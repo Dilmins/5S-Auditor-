@@ -175,6 +175,7 @@
   .gauge-current-section{display:none;}
 
   .maincol{flex:1; min-width:340px; display:flex; flex-direction:column; gap:14px;}
+  #sectionsWrap{display:flex; flex-direction:column; gap:14px;}
 
   /* ---------- Section cards ---------- */
   .section{
@@ -502,10 +503,11 @@
       <div class="gauge-current-section" id="gaugeCurrentSection" style="display:none;"></div>
     </div>
 
-    <div class="maincol" id="sectionsWrap"></div>
+    <div class="maincol">
+      <div id="sectionsWrap"></div>
+      <div style="padding:0 0 40px;" id="bottomWrap"></div>
+    </div>
   </div>
-
-  <div style="padding:0 28px 40px;" id="bottomWrap"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
