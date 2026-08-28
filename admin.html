@@ -14,8 +14,9 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 .btn{border:0;border-radius:7px;padding:10px 14px;font-weight:700;cursor:pointer}
 .primary{background:#2f7a52;color:white}
 .danger{background:#fff;border:1px solid #e4c9c0;color:#b5533c}
+.secondary{background:#fff;border:1px solid #dde2d9;color:#4b5563}
 .muted{color:#667085;font-size:13px}
-.msg{min-height:20px;color:#b5533c}
+.msg{min-height:20px;color:#b5533c;font-size:13px;line-height:1.4}
 .user{display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid #eee;padding:12px 0}
 .user:last-child{border-bottom:0}
 .pill{display:inline-block;padding:4px 7px;border-radius:12px;background:#e9f3ee;font-size:11px}
@@ -92,7 +93,7 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
       <select id="orgSelect"><option value="">Loading…</option></select>
     </div>
     <div class="inline-add" style="margin-top:14px;max-width:340px"><input id="newOrgName" placeholder="New organisation name"><button class="btn primary" id="addOrgBtn" type="button">Add organisation</button></div>
-    <div class="msg" id="orgMsg"></div>
+    <div class="msg" id="orgMsg" style="max-width:340px"></div>
   </div>
 
   <div class="card" id="sitesCard" style="display:none">
@@ -104,7 +105,11 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
     </div>
     <div style="margin-top:10px"><button class="btn danger" id="deleteSiteBtn" type="button">Delete selected site</button></div>
     <div class="inline-add" style="margin-top:16px;max-width:340px"><input id="newSiteName" placeholder="Add site code"><button class="btn primary" id="addSiteBtn" type="button">Add site</button></div>
-    <div class="msg" id="siteMsg"></div>
+    <div class="msg" id="siteMsg" style="max-width:340px"></div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:4px">
+    <button class="btn primary" type="button" data-nav="auditor">Next: Auditor →</button>
   </div>
 </div>
 
@@ -144,6 +149,12 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
       <select id="userSelect"><option value="">Loading…</option></select>
     </div>
     <div id="userDetail" style="margin-top:14px"></div>
+    <div class="msg" id="userMsg" style="max-width:340px"></div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;margin-top:4px">
+    <button class="btn secondary" type="button" data-nav="company">← Back: Company</button>
+    <button class="btn primary" type="button" data-nav="assign">Next: Assign →</button>
   </div>
 </div>
 
@@ -167,6 +178,11 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
       <select id="addAuditorsSelect" multiple size="6"></select>
     </div>
     <div style="margin-top:10px"><button class="btn primary" id="addAuditorsBtn" type="button">Add selected</button></div>
+    <div class="msg" id="assignMsg" style="max-width:420px"></div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-start;margin-top:4px">
+    <button class="btn secondary" type="button" data-nav="auditor">← Back: Auditor</button>
   </div>
 </div>
 
@@ -186,14 +202,16 @@ $('pwdToggle').addEventListener('click',()=>{
 });
 
 // ---------- Tabs ----------
+function switchTab(tabName){
+  document.querySelectorAll('.worktab[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tabName));
+  document.querySelectorAll('.workpanel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+tabName));
+  if(tabName==='assign') renderAssignOrgSelect();
+}
 document.querySelectorAll('.worktab[data-tab]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.worktab[data-tab]').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.workpanel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    $('panel-'+btn.dataset.tab).classList.add('active');
-    if(btn.dataset.tab==='assign') renderAssignOrgSelect();
-  });
+  btn.addEventListener('click',()=>switchTab(btn.dataset.tab));
+});
+document.querySelectorAll('button[data-nav]').forEach(btn=>{
+  btn.addEventListener('click',()=>switchTab(btn.dataset.nav));
 });
 
 let orgs=[];              // [{id, name}]
@@ -254,15 +272,17 @@ async function renderSitesCard(){
 
 $('addOrgBtn').addEventListener('click',async()=>{
   const name=$('newOrgName').value.trim();
-  if(!name){$('orgMsg').textContent='Enter an organisation name.';return}
+  if(!name){$('orgMsg').style.color='#b5533c';$('orgMsg').textContent='Enter an organisation name.';return}
+  $('orgMsg').style.color='#b5533c';
   $('orgMsg').textContent='Adding…';
   try{
     const r=await api('/api/orgs?resource=organisations',{method:'POST',body:JSON.stringify({name})});
     $('newOrgName').value='';
-    $('orgMsg').textContent='Organisation added.';
     selectedOrgId=r.organisation.id;
     await loadOrgs();
-  }catch(e){$('orgMsg').textContent=e.message}
+    $('orgMsg').style.color='#2f7a52';
+    $('orgMsg').textContent='Organisation successfully added.';
+  }catch(e){$('orgMsg').style.color='#b5533c';$('orgMsg').textContent=e.message}
 });
 
 $('deleteOrgBtn').addEventListener('click',async()=>{
@@ -274,7 +294,8 @@ $('deleteOrgBtn').addEventListener('click',async()=>{
     delete orgSitesCache[selectedOrgId];
     selectedOrgId=null;
     await loadOrgs();
-    alert('Organisation successfully deleted.');
+    $('orgMsg').style.color='#2f7a52';
+    $('orgMsg').textContent='Organisation successfully deleted.';
   }catch(e){alert(e.message)}
 });
 
@@ -301,7 +322,8 @@ $('deleteSiteBtn').addEventListener('click',async()=>{
     await api('/api/orgs?resource=sites&organisation_id='+selectedOrgId+'&site='+encodeURIComponent(site),{method:'DELETE'});
     delete orgSitesCache[selectedOrgId];
     await renderSitesCard();
-    alert('Site successfully deleted.');
+    $('siteMsg').style.color='#2f7a52';
+    $('siteMsg').textContent='Site successfully deleted.';
   }catch(e){alert(e.message)}
 });
 
@@ -363,8 +385,9 @@ $('userDetail').addEventListener('click',async e=>{
     try{
       await api('/api/user?id='+id,{method:'PATCH',body:JSON.stringify({is_active:!active})});
       await refresh();
-      alert(active?'Auditor successfully disabled.':'Auditor successfully enabled.');
-    }catch(err){alert(err.message)}
+      $('userMsg').style.color='#2f7a52';
+      $('userMsg').textContent=active?'Auditor successfully disabled.':'Auditor successfully enabled.';
+    }catch(err){$('userMsg').style.color='#b5533c';$('userMsg').textContent=err.message}
   }else if(btn.dataset.action==='delete'){
     const name=btn.dataset.name;
     if(!confirm(`Permanently delete auditor "${name}"? This cannot be undone.`))return;
@@ -372,8 +395,9 @@ $('userDetail').addEventListener('click',async e=>{
       selectedUserId=null;
       await api('/api/user?id='+id,{method:'DELETE'});
       await refresh();
-      alert('Auditor successfully deleted.');
-    }catch(err){alert(err.message)}
+      $('userMsg').style.color='#2f7a52';
+      $('userMsg').textContent='Auditor successfully deleted.';
+    }catch(err){$('userMsg').style.color='#b5533c';$('userMsg').textContent=err.message}
   }
 });
 
@@ -385,13 +409,15 @@ $('userSelect').addEventListener('change',()=>{
 $('form').addEventListener('submit',async e=>{
   e.preventDefault();
   const role=document.querySelector('input[name="role"]:checked').value;
+  $('msg').style.color='#b5533c';
   $('msg').textContent='Creating…';
   try{
     await api('/api/users',{method:'POST',body:JSON.stringify({username:$('username').value,full_name:$('fullName').value,password:$('password').value,role,organisation_id:null,sites:[]})});
     $('form').reset();
-    $('msg').textContent='Account created.';
     await refresh();
-  }catch(e){$('msg').textContent=e.message}
+    $('msg').style.color='#2f7a52';
+    $('msg').textContent='Auditor successfully added.';
+  }catch(e){$('msg').style.color='#b5533c';$('msg').textContent=e.message}
 });
 
 // ---------- Assign tab ----------
@@ -434,6 +460,7 @@ function renderAssignedList(){
   $('addAuditorsSelect').innerHTML=available.length
     ?available.map(u=>`<option value="${u.id}">${esc(u.full_name)}</option>`).join('')
     :'<option disabled>No auditors available to add</option>';
+  $('assignMsg').textContent='';
 
   document.querySelectorAll('.removeAuditorBtn').forEach(btn=>btn.addEventListener('click',async()=>{
     const userId=Number(btn.dataset.user);
@@ -442,8 +469,9 @@ function renderAssignedList(){
       await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:null})});
       await refresh();
       renderAssignedList();
-      alert('Auditor successfully unassigned.');
-    }catch(e){alert(e.message)}
+      $('assignMsg').style.color='#2f7a52';
+      $('assignMsg').textContent='Auditor successfully unassigned.';
+    }catch(e){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
   }));
 
   $('assignDetailCard').style.display='block';
@@ -461,8 +489,9 @@ $('addAuditorsBtn').addEventListener('click',async()=>{
     }
     await refresh();
     renderAssignedList();
-    alert(ids.length===1?'Auditor successfully assigned.':'Auditors successfully assigned.');
-  }catch(e){alert(e.message)}
+    $('assignMsg').style.color='#2f7a52';
+    $('assignMsg').textContent=ids.length===1?'Auditor successfully assigned.':'Auditors successfully assigned.';
+  }catch(e){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
   $('addAuditorsBtn').disabled=false;
 });
 
