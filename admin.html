@@ -320,19 +320,24 @@ function renderUserDetail(){
   if(!selectedUserId){$('userDetail').innerHTML='';return}
   const u=allUsers.find(x=>x.id===selectedUserId);
   if(!u){$('userDetail').innerHTML='';return}
-  $('userDetail').innerHTML=`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · ${u.role==='internal'?(u.organisation?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" id="toggleActiveBtn" type="button">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" id="deleteUserBtn" type="button">Delete</button></div></div>`;
-  $('toggleActiveBtn').addEventListener('click',async()=>{
-    try{await api('/api/user?id='+u.id,{method:'PATCH',body:JSON.stringify({is_active:!u.is_active})});await refresh()}catch(e){alert(e.message)}
-  });
-  $('deleteUserBtn').addEventListener('click',async()=>{
-    if(!confirm(`Permanently delete auditor "${u.full_name}"? This cannot be undone.`))return;
-    try{
-      selectedUserId=null;
-      await api('/api/user?id='+u.id,{method:'DELETE'});
-      await refresh();
-    }catch(e){alert(e.message)}
-  });
+  $('userDetail').innerHTML=`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${u.organisation?' · '+esc(u.organisation):''} · ${u.role==='internal'?(u.organisation?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" data-action="toggle" data-id="${u.id}" data-active="${u.is_active?'1':'0'}" type="button">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" data-action="delete" data-id="${u.id}" data-name="${esc(u.full_name)}" type="button">Delete</button></div></div>`;
 }
+
+// Single delegated listener — survives every re-render of #userDetail, no
+// per-render rebinding needed.
+$('userDetail').addEventListener('click',async e=>{
+  const btn=e.target.closest('button[data-action]');
+  if(!btn)return;
+  const id=Number(btn.dataset.id);
+  if(btn.dataset.action==='toggle'){
+    const active=btn.dataset.active==='1';
+    try{await api('/api/user?id='+id,{method:'PATCH',body:JSON.stringify({is_active:!active})});await refresh()}catch(err){alert(err.message)}
+  }else if(btn.dataset.action==='delete'){
+    const name=btn.dataset.name;
+    if(!confirm(`Permanently delete auditor "${name}"? This cannot be undone.`))return;
+    try{selectedUserId=null;await api('/api/user?id='+id,{method:'DELETE'});await refresh()}catch(err){alert(err.message)}
+  }
+});
 
 $('userSelect').addEventListener('change',()=>{
   selectedUserId=Number($('userSelect').value)||null;
