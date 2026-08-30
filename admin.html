@@ -19,7 +19,9 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 .msg{min-height:20px;color:#b5533c;font-size:13px;line-height:1.4}
 .user{display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid #eee;padding:12px 0}
 .user:last-child{border-bottom:0}
-.pill{display:inline-block;padding:4px 7px;border-radius:12px;background:#e9f3ee;font-size:11px}
+.pill{display:inline-block;padding:4px 9px;border-radius:12px;background:#e9f3ee;font-size:11px;font-weight:600;color:#2f7a52}
+.pill.role-external{background:#eaf3de;color:#3b6d11}
+.pill.role-admin{background:#182430;color:#fff}
 .inactive{opacity:.5}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .navbar{display:flex;gap:10px;align-items:center;background:#1b2430;padding:8px 18px;position:relative}
@@ -417,7 +419,7 @@ function renderUserDetail(){
   if(!u){$('userDetail').innerHTML='';return}
   const orgNames=(u.organisations||[]).map(o=>o.name);
   const orgText=orgNames.length?orgNames.join(', '):'';
-  $('userDetail').innerHTML=`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${orgText?' · '+esc(orgText):''} · ${u.role==='internal'?(orgNames.length?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" data-action="toggle" data-id="${u.id}" data-active="${u.is_active?'1':'0'}" type="button">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" data-action="delete" data-id="${u.id}" data-name="${esc(u.full_name)}" type="button">Delete</button></div></div>`;
+  $('userDetail').innerHTML=`<div class="user ${u.is_active?'':'inactive'}"><div><b>${esc(u.full_name)}</b> <span class="pill role-${esc(u.role)}">${esc(roleLabel[u.role]||u.role)}</span><div class="muted">@${esc(u.username)}${orgText?' · '+esc(orgText):''} · ${u.role==='internal'?(orgNames.length?'Assigned':'Not yet assigned — see the Assign tab'):'All sites'} · ${u.is_active?'Active':'Inactive'}</div></div><div style="display:flex;gap:8px"><button class="btn danger" data-action="toggle" data-id="${u.id}" data-active="${u.is_active?'1':'0'}" type="button">${u.is_active?'Disable':'Enable'}</button><button class="btn danger" data-action="delete" data-id="${u.id}" data-name="${esc(u.full_name)}" type="button">Delete</button></div></div>`;
 }
 
 // Single delegated listener — survives every re-render of #userDetail, no
