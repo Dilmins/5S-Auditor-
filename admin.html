@@ -179,7 +179,7 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 <!-- ---------- Assign tab: select an auditor, then manage their organisations ---------- -->
 <div class="workpanel" id="panel-assign">
   <div class="card"><h2>Assign organisations</h2>
-    <div class="muted" style="margin-bottom:10px">Select an auditor, then assign or unassign the organisation(s) they audit. Adding an organisation grants every site currently under it by default — untick any sites below that this auditor shouldn't have.</div>
+    <div class="muted" style="margin-bottom:10px">Select an auditor, then assign the organisation(s) and specific site(s) they audit. Adding an organisation doesn't grant any sites by itself — add each one from the dropdown under it.</div>
     <div class="field" style="max-width:340px">
       <label>Auditor</label>
       <select id="assignAuditorSelect"><option value="">Loading…</option></select>
@@ -500,7 +500,9 @@ async function renderAssignedList(){
   const assignedIds=new Set((u.organisations||[]).map(o=>Number(o.id)));
   const assigned=orgs.filter(o=>assignedIds.has(Number(o.id)));
   const available=orgs.filter(o=>!assignedIds.has(Number(o.id)));
-  const userSites=new Set(u.sites||[]);
+  // Keyed by "organisationId::site" so the same site code under two
+  // different organisations is never conflated.
+  const userSites=new Set((u.site_grants||[]).map(g=>g.organisation_id+'::'+g.site));
 
   // Site pills need each assigned org's current site list, so load any not
   // already cached before rendering.
@@ -513,11 +515,20 @@ async function renderAssignedList(){
   $('assignedCount').textContent=`${assigned.length} organisation${assigned.length===1?'':'s'} assigned`;
   $('assignedList').innerHTML=assigned.length
     ?assigned.map(o=>{
-        const sites=orgSitesCache[o.id]||[];
-        const pills=sites.length
-          ?sites.map(s=>`<button type="button" class="assign-pill${userSites.has(s)?' on':''}" data-org="${o.id}" data-site="${esc(s)}">${esc(s)}</button>`).join('')
-          :'<span class="muted" style="font-size:12px">No sites registered for this organisation yet.</span>';
-        return `<div class="assign-org"><h4>${esc(o.name)} <button data-org="${o.id}" class="removeOrgBtn" type="button" style="float:right;border:0;background:none;color:#b5533c;cursor:pointer;font-weight:700;font-size:12.5px">&times; Remove organisation</button></h4><div class="assign-pills">${pills}</div></div>`;
+        const orgId=Number(o.id);
+        const allSites=orgSitesCache[o.id]||[];
+        const grantedSites=allSites.filter(s=>userSites.has(o.id+'::'+s));
+        const ungrantedSites=allSites.filter(s=>!userSites.has(o.id+'::'+s));
+        const chips=grantedSites.length
+          ?grantedSites.map(s=>`<span class="org-site-chip">${esc(s)}<button data-org="${orgId}" data-site="${esc(s)}" class="removeSiteBtn" type="button">&times;</button></span>`).join('')
+          :'<span class="muted" style="font-size:12px">No sites assigned yet — add one below.</span>';
+        const addRow=ungrantedSites.length
+          ?`<div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+              <select class="orgSiteAddSelect" data-org="${orgId}" style="max-width:200px">${ungrantedSites.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}</select>
+              <button class="btn primary addSiteBtn" data-org="${orgId}" type="button" style="padding:6px 12px;font-size:12.5px">Add site</button>
+            </div>`
+          :(allSites.length?'<div class="muted" style="font-size:12px;margin-top:8px">All sites for this organisation are already assigned.</div>':'');
+        return `<div class="assign-org"><h4>${esc(o.name)} <button data-org="${orgId}" class="removeOrgBtn" type="button" style="float:right;border:0;background:none;color:#b5533c;cursor:pointer;font-weight:700;font-size:12.5px">&times; Remove organisation</button></h4><div class="org-sites">${chips}</div>${addRow}</div>`;
       }).join('')
     :'<span class="muted">No organisations assigned yet.</span>';
   $('addOrgsSelect').innerHTML=available.length
@@ -537,16 +548,30 @@ async function renderAssignedList(){
     }catch(e){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
   }));
 
-  document.querySelectorAll('.assign-pill').forEach(btn=>btn.addEventListener('click',async()=>{
-    const site=btn.dataset.site;
-    const isOn=btn.classList.contains('on');
+  document.querySelectorAll('.removeSiteBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    const orgId=Number(btn.dataset.org), site=btn.dataset.site;
     btn.disabled=true;
     try{
-      await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify(isOn?{remove_site:site}:{add_site:site})});
+      await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:orgId,remove_site:site})});
       await refresh();
       renderAssignedList();
       $('assignMsg').style.color='#2f7a52';
-      $('assignMsg').textContent=isOn?`${site} unassigned.`:`${site} assigned.`;
+      $('assignMsg').textContent=`${site} unassigned.`;
+    }catch(e){btn.disabled=false;$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
+  }));
+
+  document.querySelectorAll('.addSiteBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    const orgId=Number(btn.dataset.org);
+    const sel=document.querySelector(`.orgSiteAddSelect[data-org="${orgId}"]`);
+    const site=sel?.value;
+    if(!site)return;
+    btn.disabled=true;
+    try{
+      await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({organisation_id:orgId,add_site:site})});
+      await refresh();
+      renderAssignedList();
+      $('assignMsg').style.color='#2f7a52';
+      $('assignMsg').textContent=`${site} assigned.`;
     }catch(e){btn.disabled=false;$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
   }));
 
