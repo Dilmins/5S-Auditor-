@@ -55,17 +55,18 @@ export default async function handler(req, res) {
       }
       if (req.method === 'POST') {
         const user = await requireUser(req, res); if (!user) return;
+        // Adding a site to an organisation's site list is an org-management
+        // action, not a per-auditor one — restrict it the same way DELETE
+        // already is. Without this, any authenticated internal auditor could
+        // inject a site into an organisation they have nothing to do with.
+        if (!user || (user.role !== 'admin' && user.role !== 'external')) {
+          return json(res, 403, { error: 'Senior Auditor or administrator access required.' });
+        }
         const b = await readBody(req);
         const organisationId = Number(b.organisation_id);
         const site = String(b.site || '').trim();
         if (!organisationId || !site) return json(res, 400, { error: 'organisation_id and site are required.' });
         await sql`INSERT INTO five_s_org_sites(organisation_id, site) VALUES(${organisationId}, ${site}) ON CONFLICT DO NOTHING`;
-        // Internal auditors are gated by their own five_s_user_sites list (see
-        // canAccessSite), which is separate from the org's site list — so
-        // self-assign the site they just added or they couldn't use it.
-        if (user.role === 'internal' && Array.isArray(user.organisation_ids) && user.organisation_ids.map(Number).includes(organisationId)) {
-          await sql`INSERT INTO five_s_user_sites(user_id, organisation_id, site) VALUES(${user.id}, ${organisationId}, ${site}) ON CONFLICT DO NOTHING`;
-        }
         return json(res, 201, { ok: true });
       }
       if (req.method === 'DELETE') {
