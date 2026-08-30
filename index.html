@@ -1493,6 +1493,7 @@
     if(!body.ok) throw new Error('Login failed.');
     const user=await loadCurrentUser();
     if(!user) throw new Error('Signed in but the user session could not be loaded.');
+    if(user.role==='admin'){ location.replace('/admin.html'); return; }
     authScreen.style.display='none'; root.style.display='block';
     showStatus('');
     audit=blankAudit(); audit.meta.month=new Date().toISOString().slice(0,7);
@@ -1626,6 +1627,7 @@
 
   (async function init(){
     const user = await loadCurrentUser();
+    if(user && user.role==='admin'){ location.replace('/admin.html'); return; }
     if(user){
       authScreen.style.display='none'; root.style.display='block';
       audit.meta.month=new Date().toISOString().slice(0,7);
