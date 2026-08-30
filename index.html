@@ -345,10 +345,11 @@
   }
 
   /* ---------- Authentication ---------- */
-  #authScreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1B2430,#1F5A3B);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-  .auth-card{width:min(430px,100%);background:#fff;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:30px;}
+  #authScreen{position:fixed;inset:0;z-index:9999;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+  .auth-card{width:min(430px,100%);background:#fff;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:30px 30px 30px 26px;border-left:6px solid var(--green);}
   .auth-card h2{font-family:'Source Serif 4',serif;margin:0 0 5px;font-size:28px;}
   .auth-card p{margin:0 0 22px;color:var(--ink-soft);font-size:13px;}
+  .auth-card .auth-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--green-deep);text-transform:uppercase;margin:0 0 8px;}
   .auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
   .auth-field label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700;}
   .auth-field input{font-family:inherit;font-size:14px;padding:11px 12px;border:1px solid var(--line);border-radius:7px;}
@@ -374,10 +375,10 @@
   /* ---------- "Managed by" brand line (login screen only) ---------- */
   .powered-by{
     display:flex; align-items:center; justify-content:center; gap:8px;
-    margin-top:18px; color:#EAF2ED;
+    margin-top:40px; color:var(--ink-soft);
   }
   .powered-by span.pb-text{
-    font-family:'Oswald',sans-serif; font-size:13px; letter-spacing:.03em;
+    font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:.03em;
     font-weight:400;
   }
   .powered-by span.pb-text b{font-weight:600;}
@@ -389,7 +390,7 @@
 
 <div id="authScreen">
   <div class="auth-card">
-    <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#2F7A52;font-weight:700;margin-bottom:6px;">JASTECA</div>
+    <div class="auth-eyebrow">JASTECA</div>
     <h2>5S Audit Login</h2>
     <p>Sign in with your assigned auditor account. Auditors can access only their assigned site(s) for the relavent company; Senior auditors can access all sites and all organizations.</p>
     <form id="loginForm">
