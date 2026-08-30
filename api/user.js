@@ -28,6 +28,17 @@ export default async function handler(req, res) {
           for (const r of orgSites) await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${id}, ${r.site}) ON CONFLICT DO NOTHING`;
         }
       }
+      // Per-site toggles for the Assign tab's site pills. Scoped to a single
+      // site so they never touch a user's sites in other organisations
+      // (unlike the bulk `sites` array below, which replaces the whole set).
+      if ('add_site' in b) {
+        const site = String(b.add_site || '').trim();
+        if (site) await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${id}, ${site}) ON CONFLICT DO NOTHING`;
+      }
+      if ('remove_site' in b) {
+        const site = String(b.remove_site || '').trim();
+        if (site) await sql`DELETE FROM five_s_user_sites WHERE user_id=${id} AND site=${site}`;
+      }
       if ('remove_organisation_id' in b) {
         const organisationId = Number(b.remove_organisation_id);
         await sql`DELETE FROM five_s_user_organisations WHERE user_id=${id} AND organisation_id=${organisationId}`;
