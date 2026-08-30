@@ -32,7 +32,9 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 .navbar.nav-open .nav-links{display:flex}
 .navbar a{color:#C8CDD6;text-decoration:none;font-size:13px;font-weight:600;padding:10px 12px;border-radius:6px;width:100%;text-align:left;display:block}
 .navbar a.active{background:#2f7a52;color:#fff}
-.navbar a:hover:not(.active){background:#2a3442}
+.nav-session{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+.session-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:6px 9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:140px}
+.logout-btn{background:#fff;color:#1b2430;padding:6px 10px;font-size:11px;flex-shrink:0;border:0;border-radius:7px;font-weight:700;cursor:pointer}
 .org{border-bottom:1px solid #eee;padding:12px 0}
 .org:last-child{border-bottom:0}
 .org-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -88,6 +90,10 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
   </button>
   <div class="nav-links">
     <a href="/">Audit sheet</a>
+  </div>
+  <div class="nav-session" id="navSession">
+    <span class="session-chip" id="sessionUser"><span class="chip-label">Not signed in</span></span>
+    <button class="logout-btn" id="logoutBtn" type="button">Sign out</button>
   </div>
 </nav>
 <div class="wrap">
@@ -360,6 +366,7 @@ async function init(){
     const me=await api('/api/me');
     if(me.user.role!=='admin')throw Error('Administrator access required.');
     $('who').textContent=`Signed in as ${me.user.full_name}`;
+    $('sessionUser').innerHTML=`<span class="chip-label">${esc(me.user.full_name)} · ${esc(roleLabel[me.user.role]||me.user.role)}</span>`;
     await loadOrgs();
     await refresh();
   }catch(e){
@@ -368,6 +375,11 @@ async function init(){
     $('orgSelect').innerHTML='<option value="">Error</option>';
   }
 }
+
+$('logoutBtn').addEventListener('click',async()=>{
+  try{await api('/api/logout',{method:'POST'});}catch(_e){}
+  location.href='/';
+});
 
 async function refresh(){
   const b=await api('/api/users');
