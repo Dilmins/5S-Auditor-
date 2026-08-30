@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         // canAccessSite), which is separate from the org's site list — so
         // self-assign the site they just added or they couldn't use it.
         if (user.role === 'internal' && Array.isArray(user.organisation_ids) && user.organisation_ids.map(Number).includes(organisationId)) {
-          await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${user.id}, ${site}) ON CONFLICT DO NOTHING`;
+          await sql`INSERT INTO five_s_user_sites(user_id, organisation_id, site) VALUES(${user.id}, ${organisationId}, ${site}) ON CONFLICT DO NOTHING`;
         }
         return json(res, 201, { ok: true });
       }
