@@ -44,13 +44,3 @@ The role is taken from the database account. It is not trusted from the browser.
 
 - Any organisation's audits, sites, and history persist independently — deleting an organisation or a site is blocked if it still has saved audit history or assigned auditors.
 - Adding a new organisation or site is an `admin`/`external` action only, done from the Admin panel. Internal auditors cannot add or remove organisations or sites.
-
-## Known issue — schema.sql is out of date
-
-`schema.sql` in this repo only creates the original single-organisation tables (a flat `five_s_sites` list and a `five_s_audits.organisation` text column). It does not create the tables the current API code actually queries: `five_s_organisations`, `five_s_org_sites`, `five_s_user_organisations`, or the `organisation_id` column on `five_s_audits`.
-
-If your live database already has these (which it must, since the "Add organisation" feature is working in production), this file is just stale documentation — safe to ignore for an existing deployment, but it will fail if run against a brand-new Neon database. It should be updated to match the live schema before it's relied on for a fresh setup or disaster recovery.
-
-## Existing Neon database
-
-Use the **same `DATABASE_URL`** from your existing Neon-backed application. The SQL creates separate tables beginning with `five_s_`, so it does not modify your existing Kaizen tables.
