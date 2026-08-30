@@ -156,26 +156,26 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
   </div>
 </div>
 
-<!-- ---------- Assign tab: select an org, then manage its auditors ---------- -->
+<!-- ---------- Assign tab: select an auditor, then manage their organisations ---------- -->
 <div class="workpanel" id="panel-assign">
-  <div class="card"><h2>Assign auditors</h2>
-    <div class="muted" style="margin-bottom:10px">Select an organisation, then assign or unassign the auditors who audit it. Assigning grants access to every site currently under that organisation.</div>
+  <div class="card"><h2>Assign organisations</h2>
+    <div class="muted" style="margin-bottom:10px">Select an auditor, then assign or unassign the organisation(s) they audit. Assigning grants access to every site currently under that organisation.</div>
     <div class="field" style="max-width:340px">
-      <label>Organisation</label>
-      <select id="assignOrgSelect"><option value="">Loading…</option></select>
+      <label>Auditor</label>
+      <select id="assignAuditorSelect"><option value="">Loading…</option></select>
     </div>
   </div>
 
   <div class="card" id="assignDetailCard" style="display:none">
-    <h2 style="margin:0 0 4px" id="assignOrgName"></h2>
+    <h2 style="margin:0 0 4px" id="assignAuditorName"></h2>
     <div class="muted" id="assignedCount" style="margin-bottom:10px"></div>
     <div class="org-sites" id="assignedList"></div>
 
     <div class="field" style="max-width:340px;margin-top:18px">
-      <label>Add auditor</label>
-      <select id="addAuditorsSelect"></select>
+      <label>Add organisation</label>
+      <select id="addOrgsSelect"></select>
     </div>
-    <div style="margin-top:10px"><button class="btn primary" id="addAuditorsBtn" type="button">Add</button></div>
+    <div style="margin-top:10px"><button class="btn primary" id="assignAddOrgBtn" type="button">Add</button></div>
     <div class="msg" id="assignMsg" style="max-width:340px"></div>
   </div>
 
@@ -203,7 +203,7 @@ $('pwdToggle').addEventListener('click',()=>{
 function switchTab(tabName){
   document.querySelectorAll('.worktab[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tabName));
   document.querySelectorAll('.workpanel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+tabName));
-  if(tabName==='assign') renderAssignOrgSelect();
+  if(tabName==='assign') renderAssignAuditorSelect();
 }
 document.querySelectorAll('.worktab[data-tab]').forEach(btn=>{
   btn.addEventListener('click',()=>switchTab(btn.dataset.tab));
@@ -217,13 +217,13 @@ let orgSitesCache={};     // id -> [site,...]
 let allUsers=[];          // cached from /api/users
 let selectedOrgId=null;
 let selectedUserId=null;
-let assignSelectedOrgId=null;
+let assignSelectedUserId=null;
 
 async function loadOrgs(){
   const b=await api('/api/orgs?resource=organisations');
   orgs=b.organisations;
   renderOrgSelect();
-  renderAssignOrgSelect();
+  if(assignSelectedUserId) renderAssignedList();
 }
 
 async function fetchOrgSites(id){
@@ -346,6 +346,7 @@ async function refresh(){
   const b=await api('/api/users');
   allUsers=b.users;
   renderUserSelect();
+  renderAssignAuditorSelect();
 }
 
 const roleLabel={internal:'Auditor',external:'Senior Auditor',admin:'Administrator'};
@@ -424,78 +425,78 @@ $('form').addEventListener('submit',async e=>{
 });
 
 // ---------- Assign tab ----------
-function renderAssignOrgSelect(){
-  const sel=$('assignOrgSelect');
-  if(!orgs.length){
-    sel.innerHTML='<option value="">No organisations yet</option>';
-    assignSelectedOrgId=null;
+function renderAssignAuditorSelect(){
+  const sel=$('assignAuditorSelect');
+  const auditors=allUsers.filter(u=>u.role==='internal');
+  if(!auditors.length){
+    sel.innerHTML='<option value="">No auditors registered yet</option>';
+    assignSelectedUserId=null;
     $('assignDetailCard').style.display='none';
     return;
   }
-  sel.innerHTML='<option value="">Select organisation…</option>'+orgs.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
-  if(assignSelectedOrgId && orgs.some(o=>o.id===assignSelectedOrgId)){
-    sel.value=assignSelectedOrgId;
+  sel.innerHTML='<option value="">Select auditor…</option>'+auditors.map(u=>`<option value="${u.id}">${esc(u.full_name)} (@${esc(u.username)})</option>`).join('');
+  if(assignSelectedUserId && auditors.some(u=>Number(u.id)===assignSelectedUserId)){
+    sel.value=assignSelectedUserId;
     renderAssignedList();
   }else{
-    assignSelectedOrgId=null;
+    assignSelectedUserId=null;
     $('assignDetailCard').style.display='none';
   }
 }
 
-$('assignOrgSelect').addEventListener('change',()=>{
-  assignSelectedOrgId=Number($('assignOrgSelect').value)||null;
-  if(!assignSelectedOrgId){$('assignDetailCard').style.display='none';return}
+$('assignAuditorSelect').addEventListener('change',()=>{
+  assignSelectedUserId=Number($('assignAuditorSelect').value)||null;
+  if(!assignSelectedUserId){$('assignDetailCard').style.display='none';return}
   renderAssignedList();
 });
 
 function renderAssignedList(){
-  const org=orgs.find(o=>Number(o.id)===assignSelectedOrgId);
-  if(!org){$('assignDetailCard').style.display='none';return}
-  const orgId=Number(org.id);
-  const auditors=allUsers.filter(u=>u.role==='internal');
-  const inOrg=u=>Array.isArray(u.organisations)&&u.organisations.some(o=>Number(o.id)===orgId);
-  const assigned=auditors.filter(inOrg);
-  const available=auditors.filter(u=>!inOrg(u) && u.is_active);
+  const u=allUsers.find(x=>Number(x.id)===assignSelectedUserId);
+  if(!u){$('assignDetailCard').style.display='none';return}
+  const userId=Number(u.id);
+  const assignedIds=new Set((u.organisations||[]).map(o=>Number(o.id)));
+  const assigned=orgs.filter(o=>assignedIds.has(Number(o.id)));
+  const available=orgs.filter(o=>!assignedIds.has(Number(o.id)));
 
-  $('assignOrgName').textContent=org.name;
-  $('assignedCount').textContent=`${assigned.length} auditor${assigned.length===1?'':'s'} assigned`;
+  $('assignAuditorName').textContent=u.full_name;
+  $('assignedCount').textContent=`${assigned.length} organisation${assigned.length===1?'':'s'} assigned`;
   $('assignedList').innerHTML=assigned.length
-    ?assigned.map(u=>`<span class="org-site-chip">${esc(u.full_name)}<button data-user="${u.id}" class="removeAuditorBtn" type="button">&times;</button></span>`).join('')
-    :'<span class="muted">No auditors assigned yet.</span>';
-  $('addAuditorsSelect').innerHTML=available.length
-    ?'<option value="">Select auditor…</option>'+available.map(u=>`<option value="${u.id}">${esc(u.full_name)} (@${esc(u.username)})</option>`).join('')
-    :'<option value="">No auditors available to add</option>';
+    ?assigned.map(o=>`<span class="org-site-chip">${esc(o.name)}<button data-org="${o.id}" class="removeOrgBtn" type="button">&times;</button></span>`).join('')
+    :'<span class="muted">No organisations assigned yet.</span>';
+  $('addOrgsSelect').innerHTML=available.length
+    ?'<option value="">Select organisation…</option>'+available.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')
+    :'<option value="">No organisations available to add</option>';
   $('assignMsg').textContent='';
 
-  document.querySelectorAll('.removeAuditorBtn').forEach(btn=>btn.addEventListener('click',async()=>{
-    const userId=Number(btn.dataset.user);
-    if(!confirm('Unassign this auditor from the organisation?'))return;
+  document.querySelectorAll('.removeOrgBtn').forEach(btn=>btn.addEventListener('click',async()=>{
+    const orgId=Number(btn.dataset.org);
+    if(!confirm('Unassign this organisation from the auditor?'))return;
     try{
       await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({remove_organisation_id:orgId})});
       await refresh();
       renderAssignedList();
       $('assignMsg').style.color='#2f7a52';
-      $('assignMsg').textContent='Auditor successfully unassigned.';
+      $('assignMsg').textContent='Organisation successfully unassigned.';
     }catch(e){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
   }));
 
   $('assignDetailCard').style.display='block';
 }
 
-$('addAuditorsBtn').addEventListener('click',async()=>{
-  if(!assignSelectedOrgId)return;
-  const sel=$('addAuditorsSelect');
-  const userId=Number(sel.value);
-  if(!userId){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent='Select an auditor to add.';return}
-  $('addAuditorsBtn').disabled=true;
+$('assignAddOrgBtn').addEventListener('click',async()=>{
+  if(!assignSelectedUserId)return;
+  const sel=$('addOrgsSelect');
+  const orgId=Number(sel.value);
+  if(!orgId){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent='Select an organisation to add.';return}
+  $('assignAddOrgBtn').disabled=true;
   try{
-    await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({add_organisation_id:assignSelectedOrgId})});
+    await api('/api/user?id='+assignSelectedUserId,{method:'PATCH',body:JSON.stringify({add_organisation_id:orgId})});
     await refresh();
     renderAssignedList();
     $('assignMsg').style.color='#2f7a52';
-    $('assignMsg').textContent='Auditor successfully assigned.';
+    $('assignMsg').textContent='Organisation successfully assigned.';
   }catch(e){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
-  $('addAuditorsBtn').disabled=false;
+  $('assignAddOrgBtn').disabled=false;
 });
 
 init();
