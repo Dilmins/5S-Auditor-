@@ -179,7 +179,7 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 <!-- ---------- Assign tab: select an auditor, then manage their organisations ---------- -->
 <div class="workpanel" id="panel-assign">
   <div class="card"><h2>Assign organisations</h2>
-    <div class="muted" style="margin-bottom:10px">Select an auditor, then assign or unassign the organisation(s) they audit. Assigning grants access to every site currently under that organisation.</div>
+    <div class="muted" style="margin-bottom:10px">Select an auditor, then assign or unassign the organisation(s) they audit. Adding an organisation grants every site currently under it by default — untick any sites below that this auditor shouldn't have.</div>
     <div class="field" style="max-width:340px">
       <label>Auditor</label>
       <select id="assignAuditorSelect"><option value="">Loading…</option></select>
@@ -493,18 +493,32 @@ $('assignAuditorSelect').addEventListener('change',()=>{
   renderAssignedList();
 });
 
-function renderAssignedList(){
+async function renderAssignedList(){
   const u=allUsers.find(x=>Number(x.id)===assignSelectedUserId);
   if(!u){$('assignDetailCard').style.display='none';return}
   const userId=Number(u.id);
   const assignedIds=new Set((u.organisations||[]).map(o=>Number(o.id)));
   const assigned=orgs.filter(o=>assignedIds.has(Number(o.id)));
   const available=orgs.filter(o=>!assignedIds.has(Number(o.id)));
+  const userSites=new Set(u.sites||[]);
+
+  // Site pills need each assigned org's current site list, so load any not
+  // already cached before rendering.
+  await Promise.all(assigned.map(o=>fetchOrgSites(o.id)));
+
+  // Bail out if the auditor selection changed while the sites above were loading.
+  if(Number(assignSelectedUserId)!==userId)return;
 
   $('assignAuditorName').textContent=u.full_name;
   $('assignedCount').textContent=`${assigned.length} organisation${assigned.length===1?'':'s'} assigned`;
   $('assignedList').innerHTML=assigned.length
-    ?assigned.map(o=>`<span class="org-site-chip">${esc(o.name)}<button data-org="${o.id}" class="removeOrgBtn" type="button">&times;</button></span>`).join('')
+    ?assigned.map(o=>{
+        const sites=orgSitesCache[o.id]||[];
+        const pills=sites.length
+          ?sites.map(s=>`<button type="button" class="assign-pill${userSites.has(s)?' on':''}" data-org="${o.id}" data-site="${esc(s)}">${esc(s)}</button>`).join('')
+          :'<span class="muted" style="font-size:12px">No sites registered for this organisation yet.</span>';
+        return `<div class="assign-org"><h4>${esc(o.name)} <button data-org="${o.id}" class="removeOrgBtn" type="button" style="float:right;border:0;background:none;color:#b5533c;cursor:pointer;font-weight:700;font-size:12.5px">&times; Remove organisation</button></h4><div class="assign-pills">${pills}</div></div>`;
+      }).join('')
     :'<span class="muted">No organisations assigned yet.</span>';
   $('addOrgsSelect').innerHTML=available.length
     ?'<option value="">Select organisation…</option>'+available.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('')
@@ -513,7 +527,7 @@ function renderAssignedList(){
 
   document.querySelectorAll('.removeOrgBtn').forEach(btn=>btn.addEventListener('click',async()=>{
     const orgId=Number(btn.dataset.org);
-    if(!confirm('Unassign this organisation from the auditor?'))return;
+    if(!confirm('Unassign this organisation from the auditor? This also removes their access to all of its sites.'))return;
     try{
       await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify({remove_organisation_id:orgId})});
       await refresh();
@@ -521,6 +535,19 @@ function renderAssignedList(){
       $('assignMsg').style.color='#2f7a52';
       $('assignMsg').textContent='Organisation successfully unassigned.';
     }catch(e){$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
+  }));
+
+  document.querySelectorAll('.assign-pill').forEach(btn=>btn.addEventListener('click',async()=>{
+    const site=btn.dataset.site;
+    const isOn=btn.classList.contains('on');
+    btn.disabled=true;
+    try{
+      await api('/api/user?id='+userId,{method:'PATCH',body:JSON.stringify(isOn?{remove_site:site}:{add_site:site})});
+      await refresh();
+      renderAssignedList();
+      $('assignMsg').style.color='#2f7a52';
+      $('assignMsg').textContent=isOn?`${site} unassigned.`:`${site} assigned.`;
+    }catch(e){btn.disabled=false;$('assignMsg').style.color='#b5533c';$('assignMsg').textContent=e.message}
   }));
 
   $('assignDetailCard').style.display='block';
