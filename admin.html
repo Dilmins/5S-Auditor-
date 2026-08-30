@@ -89,7 +89,7 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
     <span></span><span></span><span></span>
   </button>
   <div class="nav-links">
-    <a href="/">Audit sheet</a>
+    <a href="/" id="auditLink">Audit sheet</a>
   </div>
   <div class="nav-session" id="navSession">
     <span class="session-chip" id="sessionUser"><span class="chip-label">Not signed in</span></span>
@@ -221,6 +221,9 @@ if(navToggle && mainNavEl){
     a.addEventListener('click',()=>mainNavEl.classList.remove('nav-open'));
   });
 }
+$('auditLink').addEventListener('click',()=>{
+  sessionStorage.setItem('adminViewAudit','1');
+});
 
 // ---------- Password show/hide ----------
 $('pwdToggle').addEventListener('click',()=>{
@@ -378,6 +381,7 @@ async function init(){
 
 $('logoutBtn').addEventListener('click',async()=>{
   try{await api('/api/logout',{method:'POST'});}catch(_e){}
+  sessionStorage.removeItem('adminViewAudit');
   location.href='/';
 });
 
