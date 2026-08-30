@@ -22,8 +22,15 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 .pill{display:inline-block;padding:4px 7px;border-radius:12px;background:#e9f3ee;font-size:11px}
 .inactive{opacity:.5}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.navbar{display:flex;gap:6px;align-items:center;background:#1b2430;padding:8px 18px}
-.navbar a{color:#C8CDD6;text-decoration:none;font-size:13px;font-weight:600;padding:7px 14px;border-radius:6px}
+.navbar{display:flex;gap:10px;align-items:center;background:#1b2430;padding:8px 18px;position:relative}
+.nav-toggle{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;width:36px;height:32px;background:transparent;border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:0;flex-shrink:0;cursor:pointer}
+.nav-toggle span{display:block;width:16px;height:2px;background:#C8CDD6;border-radius:2px;transition:transform .15s ease,opacity .15s ease}
+.navbar.nav-open .nav-toggle span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.navbar.nav-open .nav-toggle span:nth-child(2){opacity:0}
+.navbar.nav-open .nav-toggle span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+.nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:#1b2430;flex-direction:column;align-items:stretch;padding:8px 14px 14px;gap:4px;z-index:80;box-shadow:0 8px 18px rgba(0,0,0,.25)}
+.navbar.nav-open .nav-links{display:flex}
+.navbar a{color:#C8CDD6;text-decoration:none;font-size:13px;font-weight:600;padding:10px 12px;border-radius:6px;width:100%;text-align:left;display:block}
 .navbar a.active{background:#2f7a52;color:#fff}
 .navbar a:hover:not(.active){background:#2a3442}
 .org{border-bottom:1px solid #eee;padding:12px 0}
@@ -75,7 +82,14 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
   .worktab .ic{font-size:17px}
 }
 </style></head><body>
-<nav class="navbar"><a href="/">Audit</a></nav>
+<nav class="navbar" id="mainNav">
+  <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-links">
+    <a href="/">Audit sheet</a>
+  </div>
+</nav>
 <div class="wrap">
 <div class="card"><div class="top"><div><div class="muted">JASTECA</div><h1 style="margin:4px 0">5S User Accounts</h1><div class="muted">Register organisations and auditors, then assign auditors to the organisation(s) they audit.</div></div></div><div id="who" class="muted" style="margin-top:10px"></div></div>
 
@@ -188,6 +202,19 @@ body{font-family:Arial,sans-serif;background:#f2f4ef;color:#1b2430;margin:0}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path,opt={}){const r=await fetch(path,{credentials:'same-origin',...opt,headers:{'Content-Type':'application/json',...(opt.headers||{})}});let b={};try{b=await r.json()}catch{}if(!r.ok)throw Error(b.error||`HTTP ${r.status}`);return b}
+
+// ---------- Hamburger menu ----------
+const navToggle=$('navToggle');
+const mainNavEl=$('mainNav');
+if(navToggle && mainNavEl){
+  navToggle.addEventListener('click',()=>{
+    const open=mainNavEl.classList.toggle('nav-open');
+    navToggle.setAttribute('aria-expanded',open?'true':'false');
+  });
+  mainNavEl.querySelectorAll('a').forEach(a=>{
+    a.addEventListener('click',()=>mainNavEl.classList.remove('nav-open'));
+  });
+}
 
 // ---------- Password show/hide ----------
 $('pwdToggle').addEventListener('click',()=>{
