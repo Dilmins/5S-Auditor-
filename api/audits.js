@@ -10,14 +10,27 @@ export default async function handler(req, res) {
       const site = req.query?.site || '';
       if (site && !canAccessSite(user, site)) return json(res, 403, { error: 'You are not authorised to view this site.' });
 
-      const rows = site
-        ? await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits WHERE site=${site} ORDER BY audit_month DESC, updated_at DESC`
-        : user.role === 'external' || user.role === 'admin'
-          ? await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits ORDER BY audit_month DESC, updated_at DESC`
-          // Internal auditors: scope by their assigned organisations, not just
-          // their site list — otherwise two orgs reusing the same site code
-          // would leak into each other.
-          : await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits WHERE organisation_id = ANY(${user.organisation_ids}) AND site = ANY(${user.sites}) ORDER BY audit_month DESC, updated_at DESC`;
+      const isExternalOrAdmin = user.role === 'external' || user.role === 'admin';
+      const rows = isExternalOrAdmin
+        ? (site
+            ? await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits WHERE site=${site} ORDER BY audit_month DESC, updated_at DESC`
+            : await sql`SELECT id, organisation, site, department, audit_month, auditor, auditor_type, overall_total, saved_at, updated_at FROM five_s_audits ORDER BY audit_month DESC, updated_at DESC`)
+        // Internal auditors: join against their exact (organisation, site)
+        // grants rather than matching organisation and site independently —
+        // otherwise two orgs reusing the same site code would leak into
+        // each other for an auditor assigned to both.
+        : (site
+            ? await sql`
+                SELECT a.id, a.organisation, a.site, a.department, a.audit_month, a.auditor, a.auditor_type, a.overall_total, a.saved_at, a.updated_at
+                FROM five_s_audits a
+                JOIN five_s_user_sites g ON g.user_id=${user.id} AND g.organisation_id=a.organisation_id AND g.site=a.site
+                WHERE a.site=${site}
+                ORDER BY a.audit_month DESC, a.updated_at DESC`
+            : await sql`
+                SELECT a.id, a.organisation, a.site, a.department, a.audit_month, a.auditor, a.auditor_type, a.overall_total, a.saved_at, a.updated_at
+                FROM five_s_audits a
+                JOIN five_s_user_sites g ON g.user_id=${user.id} AND g.organisation_id=a.organisation_id AND g.site=a.site
+                ORDER BY a.audit_month DESC, a.updated_at DESC`);
       return json(res, 200, { audits: rows });
     }
 
@@ -25,7 +38,6 @@ export default async function handler(req, res) {
       const body = await readBody(req);
       const { site, audit_month, audit } = body;
       if (!site || !audit_month || !audit) return json(res, 400, { error: 'site, audit_month and audit are required.' });
-      if (!canAccessSite(user, site)) return json(res, 403, { error: 'You are not authorised to save an audit for this site.' });
 
       let organisationId;
       if (user.role === 'internal') {
@@ -36,6 +48,10 @@ export default async function handler(req, res) {
         if (!organisationId && orgIds.length === 1) organisationId = orgIds[0];
         if (!organisationId || !orgIds.includes(organisationId))
           return json(res, 403, { error: 'You are not assigned to that organisation.' });
+        // Scoped to this exact organisation, so a same-named site the
+        // auditor is granted under a different organisation doesn't count.
+        if (!canAccessSite(user, site, organisationId))
+          return json(res, 403, { error: 'You are not authorised to save an audit for this site.' });
       } else {
         organisationId = Number(body.organisation_id || audit.meta?.organisationId);
         if (!organisationId) return json(res, 400, { error: 'organisation_id is required.' });
@@ -76,7 +92,19 @@ export default async function handler(req, res) {
       const month = req.query?.month || '';
       if (!site || !month) return json(res, 400, { error: 'site and month are required.' });
       if (!canAccessSite(user, site)) return json(res, 403, { error: 'You are not authorised to delete this site audit.' });
-      await sql`DELETE FROM five_s_audits WHERE site=${site} AND audit_month=${month}`;
+      // Deleting by site+month alone, with no organisation scoping, would
+      // delete every organisation's record that happens to share that site
+      // code and month. Internal auditors: only ever touch a row inside an
+      // organisation they're actually granted that exact site under.
+      const deleted = user.role === 'internal'
+        ? await sql`
+            DELETE FROM five_s_audits a
+            USING five_s_user_sites g
+            WHERE a.site=${site} AND a.audit_month=${month}
+              AND g.user_id=${user.id} AND g.organisation_id=a.organisation_id AND g.site=a.site
+            RETURNING a.id`
+        : await sql`DELETE FROM five_s_audits WHERE site=${site} AND audit_month=${month} RETURNING id`;
+      if (!deleted.length) return json(res, 404, { error: 'No matching audit found to delete.' });
       return json(res, 200, { ok: true });
     }
 
