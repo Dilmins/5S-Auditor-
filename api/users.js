@@ -12,7 +12,11 @@ export default async function handler(req, res) {
                  array_agg(DISTINCT jsonb_build_object('id', o.id, 'name', o.name)) FILTER (WHERE o.id IS NOT NULL),
                  '{}'
                ) organisations,
-               COALESCE(array_agg(DISTINCT usa.site) FILTER (WHERE usa.site IS NOT NULL), '{}') sites
+               COALESCE(array_agg(DISTINCT usa.site) FILTER (WHERE usa.site IS NOT NULL), '{}') sites,
+               COALESCE(
+                 array_agg(DISTINCT jsonb_build_object('organisation_id', usa.organisation_id, 'site', usa.site)) FILTER (WHERE usa.site IS NOT NULL),
+                 '{}'
+               ) site_grants
         FROM five_s_users u
         LEFT JOIN five_s_user_organisations uo ON uo.user_id = u.id
         LEFT JOIN five_s_organisations o ON o.id = uo.organisation_id
