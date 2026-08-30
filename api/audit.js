@@ -14,6 +14,14 @@ export default async function handler(req, res) {
       ? await sql`SELECT * FROM five_s_audits WHERE site=${site} AND audit_month=${month} AND organisation_id = ANY(${user.organisation_ids}) LIMIT 1`
       : await sql`SELECT * FROM five_s_audits WHERE site=${site} AND audit_month=${month} LIMIT 1`;
     if (!rows.length) return json(res, 404, { error: 'No saved audit found for this site/month.' });
+    // Precise recheck now that we know which organisation this row actually
+    // belongs to: the query above only confirmed org membership, not that
+    // this specific site was granted under that specific organisation — two
+    // orgs can register the same site code, and this auditor might only be
+    // granted it under one of them.
+    if (user.role === 'internal' && !canAccessSite(user, site, rows[0].organisation_id)) {
+      return json(res, 403, { error: 'You are not authorised to view this site.' });
+    }
     return json(res, 200, { audit: rows[0] });
   } catch (e) {
     console.error(e);
