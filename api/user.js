@@ -20,45 +20,38 @@ export default async function handler(req, res) {
         const orgExists = await sql`SELECT id FROM five_s_organisations WHERE id=${organisationId} LIMIT 1`;
         if (!orgExists.length) return json(res, 400, { error: 'Unknown organisation.' });
         await sql`INSERT INTO five_s_user_organisations(user_id, organisation_id) VALUES(${id}, ${organisationId}) ON CONFLICT DO NOTHING`;
-        // Grant access to that organisation's current site list too (a single
-        // tap in the Assign tab covers both org and site access). Existing
-        // site access from other organisations is left untouched.
-        if (!Array.isArray(b.sites)) {
-          const orgSites = await sql`SELECT site FROM five_s_org_sites WHERE organisation_id=${organisationId}`;
-          for (const r of orgSites) await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${id}, ${r.site}) ON CONFLICT DO NOTHING`;
-        }
+        // No sites are auto-granted here — the admin picks which of the
+        // organisation's sites this auditor actually needs from the Assign
+        // tab's site dropdown, one at a time.
       }
-      // Per-site toggles for the Assign tab's site pills. Scoped to a single
-      // site so they never touch a user's sites in other organisations
-      // (unlike the bulk `sites` array below, which replaces the whole set).
+      // Per-site toggles for the Assign tab's site dropdown. organisation_id
+      // is required and every row is (user, organisation, site)-scoped, so
+      // these never touch — or get confused with — a same-named site under
+      // a different organisation.
       if ('add_site' in b) {
+        const organisationId = Number(b.organisation_id);
         const site = String(b.add_site || '').trim();
-        if (site) await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${id}, ${site}) ON CONFLICT DO NOTHING`;
+        if (!organisationId || !site) return json(res, 400, { error: 'organisation_id and add_site are required.' });
+        await sql`INSERT INTO five_s_user_sites(user_id, organisation_id, site) VALUES(${id}, ${organisationId}, ${site}) ON CONFLICT DO NOTHING`;
       }
       if ('remove_site' in b) {
+        const organisationId = Number(b.organisation_id);
         const site = String(b.remove_site || '').trim();
-        if (site) await sql`DELETE FROM five_s_user_sites WHERE user_id=${id} AND site=${site}`;
+        if (!organisationId || !site) return json(res, 400, { error: 'organisation_id and remove_site are required.' });
+        await sql`DELETE FROM five_s_user_sites WHERE user_id=${id} AND organisation_id=${organisationId} AND site=${site}`;
       }
       if ('remove_organisation_id' in b) {
         const organisationId = Number(b.remove_organisation_id);
         await sql`DELETE FROM five_s_user_organisations WHERE user_id=${id} AND organisation_id=${organisationId}`;
-        // Drop site access that isn't covered by any of the user's remaining
-        // organisations, so removing an org actually revokes its sites.
-        if (!Array.isArray(b.sites)) {
-          await sql`
-            DELETE FROM five_s_user_sites usa
-            WHERE usa.user_id=${id}
-              AND NOT EXISTS (
-                SELECT 1 FROM five_s_user_organisations uo
-                JOIN five_s_org_sites os ON os.organisation_id = uo.organisation_id
-                WHERE uo.user_id = ${id} AND os.site = usa.site
-              )
-          `;
-        }
+        // organisation_id is now on every row, so dropping this org's sites
+        // is an exact match — no risk of touching another org's same-named site.
+        await sql`DELETE FROM five_s_user_sites WHERE user_id=${id} AND organisation_id=${organisationId}`;
       }
       if (Array.isArray(b.sites)) {
-        await sql`DELETE FROM five_s_user_sites WHERE user_id=${id}`;
-        for (const site of b.sites) await sql`INSERT INTO five_s_user_sites(user_id, site) VALUES(${id}, ${site}) ON CONFLICT DO NOTHING`;
+        const organisationId = Number(b.organisation_id);
+        if (!organisationId) return json(res, 400, { error: 'organisation_id is required when replacing sites.' });
+        await sql`DELETE FROM five_s_user_sites WHERE user_id=${id} AND organisation_id=${organisationId}`;
+        for (const site of b.sites) await sql`INSERT INTO five_s_user_sites(user_id, organisation_id, site) VALUES(${id}, ${organisationId}, ${site}) ON CONFLICT DO NOTHING`;
       }
       return json(res, 200, { ok: true });
     }
