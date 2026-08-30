@@ -68,18 +68,25 @@
     position:relative;
   }
   .nav-toggle{
-    display:none; flex-direction:column; justify-content:center; align-items:center;
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
     gap:4px; width:36px; height:32px; background:transparent;
     border:1px solid rgba(255,255,255,.22); border-radius:6px; padding:0; flex-shrink:0;
+    cursor:pointer;
   }
   .nav-toggle span{ display:block; width:16px; height:2px; background:#C8CDD6; border-radius:2px; transition:transform .15s ease, opacity .15s ease; }
   .navbar.nav-open .nav-toggle span:nth-child(1){ transform:translateY(6px) rotate(45deg); }
   .navbar.nav-open .nav-toggle span:nth-child(2){ opacity:0; }
   .navbar.nav-open .nav-toggle span:nth-child(3){ transform:translateY(-6px) rotate(-45deg); }
-  .nav-links{ display:flex; gap:6px; align-items:center; }
+  .nav-links{
+    display:none; position:absolute; top:100%; left:0; right:0;
+    background:#1b2430; flex-direction:column; align-items:stretch;
+    padding:8px 14px 14px; gap:4px; z-index:80;
+    box-shadow:0 8px 18px rgba(0,0,0,.25);
+  }
+  .navbar.nav-open .nav-links{ display:flex; }
   .navbar a{
     color:#C8CDD6; text-decoration:none; font-size:13px; font-weight:600;
-    padding:7px 14px; border-radius:6px;
+    padding:10px 12px; border-radius:6px; width:100%; text-align:left;
   }
   .navbar a.active{ background:#2f7a52; color:#fff; }
   .navbar a:hover:not(.active){ background:#2a3442; }
@@ -93,15 +100,6 @@
 
   @media (max-width:600px){
     .navbar{ padding:8px 14px; }
-    .nav-toggle{ display:flex; }
-    .nav-links{
-      display:none; position:absolute; top:100%; left:0; right:0;
-      background:#1b2430; flex-direction:column; align-items:stretch;
-      padding:8px 14px 14px; gap:4px; z-index:80;
-      box-shadow:0 8px 18px rgba(0,0,0,.25);
-    }
-    .navbar.nav-open .nav-links{ display:flex; }
-    .navbar a{ width:100%; text-align:left; padding:10px 12px; }
   }
 
   /* ---------- Meta bar ----------
@@ -1627,7 +1625,6 @@
 
   (async function init(){
     const user = await loadCurrentUser();
-    if(user && user.role==='admin'){ location.replace('/admin.html'); return; }
     if(user){
       authScreen.style.display='none'; root.style.display='block';
       audit.meta.month=new Date().toISOString().slice(0,7);
